@@ -1,0 +1,2478 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>vishwa@portfolio: ~ — tty1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=VT323&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0d0a;
+      --bg-deep: #050605;
+      --fg: #e8c468;
+      --fg-bright: #ffd97a;
+      --fg-dim: #8a7548;
+      --accent: #6abf69;
+      --accent-2: #5fb3d4;
+      --error: #ff6b5e;
+      --warn: #ffcc66;
+      --border: #2a2a20;
+      --cursor: #ffd97a;
+    }
+
+    body.theme-amber {
+      --bg: #0a0d0a;
+      --bg-deep: #050605;
+      --fg: #e8c468;
+      --fg-bright: #ffd97a;
+      --fg-dim: #8a7548;
+      --accent: #6abf69;
+      --accent-2: #5fb3d4;
+      --error: #ff6b5e;
+      --cursor: #ffd97a;
+      --border: #2a2a20;
+    }
+
+    body.theme-green {
+      --bg: #050a05;
+      --bg-deep: #020402;
+      --fg: #33ff66;
+      --fg-bright: #aaffbb;
+      --fg-dim: #1a8033;
+      --accent: #ffcc33;
+      --accent-2: #66ddff;
+      --error: #ff5555;
+      --cursor: #aaffbb;
+      --border: #103a18;
+    }
+
+    body.theme-cyan {
+      --bg: #04101a;
+      --bg-deep: #02080e;
+      --fg: #5fe0e0;
+      --fg-bright: #a0f5f5;
+      --fg-dim: #2a8088;
+      --accent: #ff9966;
+      --accent-2: #ffcc66;
+      --error: #ff6b9e;
+      --cursor: #a0f5f5;
+      --border: #0a3040;
+    }
+
+    body.theme-locked {
+      --bg: #000000;
+      --bg-deep: #000000;
+      --fg: #00ff00;
+      --fg-bright: #00ff00;
+      --fg-dim: #008800;
+      --accent: #00ff00;
+      --accent-2: #00ff00;
+      --error: #ff0000;
+      --cursor: #00ff00;
+      --border: #004400;
+    }
+
+    body.theme-locked .bezel {
+      background: #000;
+    }
+
+    body.theme-locked .screen {
+      box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.1), 0 0 50px rgba(0, 255, 0, 0.1);
+    }
+
+    body.theme-locked .titlebar {
+      background: #0a0a0a;
+      border-bottom: 1px solid #004400;
+    }
+
+    body.theme-locked .titlebar-title {
+      color: #008800;
+    }
+
+    body.theme-locked .statusbar {
+      background: #050505;
+      border-top: 1px solid #004400;
+    }
+
+    body.theme-locked .tb-btn.close {
+      background: #333;
+    }
+
+    body.theme-locked .tb-btn.min {
+      background: #333;
+    }
+
+    body.theme-locked .tb-btn.max {
+      background: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      color: var(--fg);
+      font-size: 14px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .hidden-input {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      border: none;
+      background: transparent;
+      color: transparent;
+      font-size: 16px;
+      caret-color: transparent;
+      z-index: -1;
+    }
+
+    .bezel {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 30%, #1a1a1a 0%, #050505 70%), #000;
+      padding: 18px;
+      display: flex;
+    }
+
+    .screen {
+      flex: 1;
+      background: var(--bg);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      box-shadow:
+        inset 0 0 60px rgba(0, 0, 0, 0.7),
+        inset 0 0 240px rgba(232, 196, 104, 0.04),
+        0 0 0 1px rgba(255, 255, 255, 0.06),
+        0 0 60px rgba(0, 0, 0, 0.6),
+        0 20px 80px rgba(0, 0, 0, 0.8);
+      animation: warmup 1.5s ease-out;
+    }
+
+    @keyframes warmup {
+      0% {
+        opacity: 0;
+        filter: brightness(0.2) contrast(0.5);
+      }
+
+      40% {
+        opacity: 1;
+        filter: brightness(1.4) contrast(1.1);
+      }
+
+      55% {
+        filter: brightness(0.85) contrast(1);
+      }
+
+      100% {
+        opacity: 1;
+        filter: brightness(1) contrast(1);
+      }
+    }
+
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(0deg,
+          rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 2px,
+          rgba(0, 0, 0, 0.22) 3px, rgba(0, 0, 0, 0.22) 4px);
+      pointer-events: none;
+      z-index: 10;
+      transition: opacity 0.3s;
+    }
+
+    .scanlines.off {
+      opacity: 0;
+    }
+
+    .vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at center, transparent 35%, rgba(0, 0, 0, 0.55) 100%);
+      pointer-events: none;
+      z-index: 11;
+    }
+
+    .flicker {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 217, 122, 0.025);
+      pointer-events: none;
+      z-index: 12;
+      animation: flicker 6s infinite;
+      mix-blend-mode: screen;
+    }
+
+    body.theme-locked .flicker {
+      background: rgba(0, 255, 0, 0.05);
+    }
+
+    @keyframes flicker {
+
+      0%,
+      96%,
+      100% {
+        opacity: 0.5;
+      }
+
+      97% {
+        opacity: 0.2;
+      }
+
+      97.5% {
+        opacity: 0.8;
+      }
+
+      98% {
+        opacity: 0.3;
+      }
+
+      99% {
+        opacity: 0.6;
+      }
+    }
+
+    .phosphor-hum {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(to bottom, transparent 0%, rgba(255, 217, 122, 0.02) 50%, transparent 100%);
+      pointer-events: none;
+      z-index: 13;
+      animation: hum 10s linear infinite;
+    }
+
+    body.theme-locked .phosphor-hum {
+      background: linear-gradient(to bottom, transparent 0%, rgba(0, 255, 0, 0.05) 50%, transparent 100%);
+    }
+
+    @keyframes hum {
+      from {
+        transform: translateY(-100px);
+      }
+
+      to {
+        transform: translateY(120vh);
+      }
+    }
+
+    .titlebar {
+      position: relative;
+      height: 28px;
+      background: linear-gradient(180deg, #1a1a14 0%, #0a0a06 100%);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      font-size: 11px;
+      color: var(--fg-dim);
+      z-index: 5;
+      letter-spacing: 0.4px;
+    }
+
+    .titlebar-buttons {
+      display: flex;
+      gap: 6px;
+      margin-right: 12px;
+    }
+
+    .tb-btn {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.5);
+    }
+
+    .tb-btn.close {
+      background: #ff5e5e;
+    }
+
+    .tb-btn.min {
+      background: #ffbd2e;
+    }
+
+    .tb-btn.max {
+      background: #28ca42;
+    }
+
+    .titlebar-title {
+      flex: 1;
+      text-align: center;
+    }
+
+    .titlebar-info {
+      width: 56px;
+      text-align: right;
+      font-size: 10px;
+    }
+
+    .terminal {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 28px - 22px);
+      overflow-y: auto;
+      padding: 14px 22px 24px;
+      z-index: 1;
+      text-shadow: 0 0 1px rgba(232, 196, 104, 0.3);
+    }
+
+    body.theme-locked .terminal {
+      text-shadow: 0 0 2px rgba(0, 255, 0, 0.5);
+    }
+
+    .terminal::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .terminal::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .terminal::-webkit-scrollbar-thumb {
+      background: rgba(232, 196, 104, 0.18);
+      border-radius: 3px;
+    }
+
+    .terminal::-webkit-scrollbar-thumb:hover {
+      background: rgba(232, 196, 104, 0.35);
+    }
+
+    .output {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .output-line {
+      margin: 0;
+      min-height: 1.4em;
+      animation: lineFade 0.18s ease-out;
+    }
+
+    @keyframes lineFade {
+      from {
+        opacity: 0.2;
+        transform: translateX(-2px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .prompt-line {
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .prompt-prefix {
+      display: inline;
+    }
+
+    .prompt-user {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .prompt-host {
+      color: var(--accent-2);
+      font-weight: 500;
+    }
+
+    .prompt-path {
+      color: var(--fg-bright);
+      font-weight: 500;
+    }
+
+    .prompt-sep {
+      color: var(--fg-dim);
+    }
+
+    .prompt-guest {
+      color: var(--fg-bright);
+      font-weight: 500;
+    }
+
+    .input-area {
+      display: inline;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .input-text {
+      color: var(--fg);
+    }
+
+    .ghost-text {
+      color: var(--fg-dim);
+      opacity: 0.55;
+      font-style: italic;
+      animation: ghostFlicker 0.4s ease-out;
+    }
+
+    @keyframes ghostFlicker {
+      0% {
+        opacity: 0;
+      }
+
+      30% {
+        opacity: 0.8;
+      }
+
+      60% {
+        opacity: 0.4;
+      }
+
+      100% {
+        opacity: 0.55;
+      }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 0.55em;
+      height: 1.15em;
+      background: var(--cursor);
+      vertical-align: text-bottom;
+      margin-left: 1px;
+      margin-bottom: -2px;
+      animation: blink 1.06s steps(1) infinite;
+      box-shadow: 0 0 6px rgba(255, 217, 122, 0.5);
+    }
+
+    body.theme-locked .cursor {
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+    }
+
+    @keyframes blink {
+
+      0%,
+      49% {
+        opacity: 1;
+      }
+
+      50%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .text-error {
+      color: var(--error);
+    }
+
+    .text-success {
+      color: var(--accent);
+    }
+
+    .text-info {
+      color: var(--accent-2);
+    }
+
+    .text-dim {
+      color: var(--fg-dim);
+    }
+
+    .text-bright {
+      color: var(--fg-bright);
+      font-weight: 500;
+    }
+
+    .text-warn {
+      color: var(--warn);
+    }
+
+    .text-bold {
+      font-weight: 700;
+    }
+
+    .guess-line {
+      color: var(--fg-bright);
+      font-weight: bold;
+      letter-spacing: 6px;
+      padding-left: 8px;
+      font-size: 1.1em;
+    }
+
+    .result-line {
+      color: var(--accent);
+      letter-spacing: 6px;
+      padding-left: 8px;
+      font-size: 1.1em;
+    }
+
+    .md {
+      margin: 6px 0 10px;
+      padding: 4px 0 4px 18px;
+      border-left: 1px solid var(--border);
+      max-width: 100%;
+    }
+
+    .md h1 {
+      color: var(--fg-bright);
+      font-size: 1.4em;
+      font-weight: 700;
+      margin: 14px 0 4px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+      letter-spacing: 0.3px;
+      text-shadow: 0 0 6px rgba(255, 217, 122, 0.25);
+    }
+
+    .md h2 {
+      color: var(--accent);
+      font-size: 1.15em;
+      font-weight: 700;
+      margin: 14px 0 4px;
+    }
+
+    .md h3 {
+      color: var(--accent-2);
+      font-size: 1em;
+      font-weight: 700;
+      margin: 10px 0 4px;
+    }
+
+    .md p {
+      margin: 6px 0;
+      line-height: 1.65;
+      color: var(--fg);
+    }
+
+    .md code {
+      background: rgba(232, 196, 104, 0.1);
+      color: var(--fg-bright);
+      padding: 1px 5px;
+      border-radius: 2px;
+      font-size: 0.95em;
+    }
+
+    .md pre {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      margin: 10px 0;
+      overflow-x: auto;
+      border-radius: 2px;
+    }
+
+    .md pre code {
+      background: none;
+      color: var(--fg);
+      padding: 0;
+      font-size: 0.95em;
+      display: block;
+      white-space: pre;
+    }
+
+    .md ul,
+    .md ol {
+      margin: 6px 0;
+      padding-left: 24px;
+    }
+
+    .md li {
+      margin: 3px 0;
+      line-height: 1.6;
+    }
+
+    .md a {
+      color: var(--accent-2);
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+
+    .md a:hover {
+      color: var(--fg-bright);
+    }
+
+    .md blockquote {
+      border-left: 3px solid var(--accent);
+      padding: 2px 0 2px 12px;
+      color: var(--fg-dim);
+      margin: 8px 0;
+      font-style: italic;
+    }
+
+    .md hr {
+      border: none;
+      border-top: 1px dashed var(--border);
+      margin: 12px 0;
+    }
+
+    .md strong {
+      color: var(--fg-bright);
+      font-weight: 700;
+    }
+
+    .md em {
+      color: var(--accent);
+    }
+
+    .md .meta {
+      color: var(--fg-dim);
+      font-size: 0.9em;
+      font-style: italic;
+      margin-bottom: 8px;
+    }
+
+    .man-page {
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 0;
+      margin: 8px 0;
+      animation: manScroll 0.7s ease-out;
+      white-space: normal;
+    }
+
+    @keyframes manScroll {
+      from {
+        clip-path: inset(0 0 100% 0);
+        opacity: 0.6;
+      }
+
+      to {
+        clip-path: inset(0 0 0 0);
+        opacity: 1;
+      }
+    }
+
+    .man-header {
+      text-align: center;
+      color: var(--fg-bright);
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: 1px;
+      font-size: 0.95em;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .man-section {
+      color: var(--accent);
+      font-weight: 700;
+      margin: 12px 0 4px;
+      text-transform: uppercase;
+      font-size: 0.95em;
+      letter-spacing: 1px;
+    }
+
+    .man-entry {
+      margin: 3px 0;
+      padding-left: 18px;
+      text-indent: -18px;
+      line-height: 1.6;
+    }
+
+    .man-cmd {
+      color: var(--fg-bright);
+      font-weight: 700;
+    }
+
+    .man-footer {
+      text-align: center;
+      color: var(--fg-dim);
+      font-size: 0.9em;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      letter-spacing: 0.5px;
+    }
+
+    .ls-listing {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 2px 24px;
+      margin: 4px 0;
+      white-space: normal;
+    }
+
+    .ls-item {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      padding: 1px 0;
+    }
+
+    .ls-item .ls-icon {
+      width: 1.2em;
+      flex-shrink: 0;
+    }
+
+    .ls-item.dir {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .ls-item.file {
+      color: var(--fg);
+    }
+
+    .ls-item.markdown {
+      color: var(--fg-bright);
+    }
+
+    .ls-item.readme {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .ls-long {
+      display: grid;
+      grid-template-columns: auto auto auto auto 1fr;
+      gap: 4px 18px;
+      margin: 4px 0;
+      font-size: 0.95em;
+      white-space: normal;
+    }
+
+    .ls-long .ls-perms {
+      color: var(--accent-2);
+    }
+
+    .ls-long .ls-size {
+      color: var(--fg-dim);
+      text-align: right;
+    }
+
+    .ls-long .ls-date {
+      color: var(--fg-dim);
+    }
+
+    .ls-long .ls-name {
+      color: var(--fg);
+    }
+
+    .ls-long .ls-name.dir {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .ls-long .ls-name.markdown {
+      color: var(--fg-bright);
+    }
+
+    .statusbar {
+      height: 22px;
+      background: var(--bg-deep);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      font-size: 10px;
+      color: var(--fg-dim);
+      z-index: 5;
+      letter-spacing: 0.5px;
+    }
+
+    .statusbar-section {
+      padding: 0 12px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .statusbar-section:last-child {
+      border-right: none;
+      margin-left: auto;
+    }
+
+    .sb-label {
+      color: var(--accent);
+      margin-right: 4px;
+      font-weight: 700;
+    }
+
+    .composer {
+      border: 1px solid var(--border);
+      margin: 8px 0;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0;
+      animation: lineFade 0.3s ease-out;
+    }
+
+    .composer-header {
+      background: var(--border);
+      padding: 4px 12px;
+      font-size: 0.9em;
+      color: var(--accent);
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      letter-spacing: 0.5px;
+    }
+
+    .composer-body {
+      padding: 12px 14px;
+    }
+
+    .composer-field {
+      display: flex;
+      align-items: center;
+      margin: 5px 0;
+    }
+
+    .composer-label {
+      width: 80px;
+      color: var(--accent-2);
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .composer-input,
+    .composer-textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 1px dashed var(--border);
+      outline: none;
+      color: var(--fg);
+      font-family: inherit;
+      font-size: inherit;
+      padding: 2px 4px;
+    }
+
+    .composer-input:focus,
+    .composer-textarea:focus {
+      border-bottom-color: var(--accent);
+    }
+
+    .composer-textarea {
+      resize: vertical;
+      min-height: 80px;
+      border: 1px dashed var(--border);
+      margin-top: 4px;
+      line-height: 1.5;
+    }
+
+    .composer-actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .composer-btn {
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      padding: 4px 14px;
+      font-family: inherit;
+      font-size: 0.92em;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .composer-btn:hover:not(:disabled) {
+      background: var(--accent);
+      color: var(--bg);
+      box-shadow: 0 0 8px rgba(106, 191, 105, 0.4);
+    }
+
+    .composer-btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .composer-btn.secondary {
+      border-color: var(--fg-dim);
+      color: var(--fg-dim);
+    }
+
+    .composer-btn.secondary:hover:not(:disabled) {
+      background: var(--fg-dim);
+      color: var(--bg);
+      box-shadow: none;
+    }
+
+    .composer-hint {
+      color: var(--fg-dim);
+      font-size: 0.85em;
+      font-style: italic;
+    }
+
+    .neofetch {
+      display: flex;
+      gap: 28px;
+      margin: 8px 0;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+
+    .neofetch-ascii {
+      color: var(--accent);
+      font-size: 11px;
+      line-height: 1.15;
+      white-space: pre;
+      text-shadow: 0 0 6px rgba(106, 191, 105, 0.4);
+    }
+
+    .neofetch-info {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .neofetch-info .nf-label {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .neofetch-info .nf-sep {
+      color: var(--fg-dim);
+      margin: 0 6px;
+    }
+
+    .neofetch-info .nf-line {
+      margin: 2px 0;
+    }
+
+    .neofetch-colors {
+      display: grid;
+      grid-template-columns: repeat(8, 14px);
+      gap: 2px;
+      margin-top: 10px;
+    }
+
+    .neofetch-color {
+      width: 14px;
+      height: 14px;
+      border-radius: 2px;
+    }
+
+    .ascii-banner {
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1.1;
+      font-size: 10px;
+      white-space: pre;
+      text-shadow: 0 0 8px rgba(106, 191, 105, 0.4);
+      margin: 8px 0;
+    }
+
+    @keyframes flickerHard {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(1);
+      }
+
+      10%,
+      30%,
+      50%,
+      70%,
+      90% {
+        opacity: 0;
+        transform: scale(1.02);
+        filter: brightness(3);
+      }
+
+      20%,
+      40%,
+      60%,
+      80% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(0.5);
+      }
+    }
+
+    .flicker-hard .screen {
+      animation: flickerHard 0.4s ease-out;
+    }
+
+    /* Spotify Media Player Styles */
+    .music-player {
+      display: flex;
+      gap: 24px;
+      border: 1px solid var(--accent);
+      padding: 16px;
+      margin: 8px 0;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .lyrics-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-height: 140px;
+    }
+
+    .info-pane {
+      width: 400px;
+      border-left: 1px dashed var(--border);
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .info-pane h2 {
+      margin: 0 0 12px 0;
+      font-size: 1.1em;
+      color: var(--fg-bright);
+    }
+
+    .info-pane p {
+      margin: 3px 0;
+      line-height: 1.3;
+    }
+
+    .visualizer {
+      font-size: 1em;
+      letter-spacing: 2px;
+      color: var(--accent);
+      margin: 8px 0;
+      text-shadow: 0 0 4px var(--accent);
+    }
+
+    .cassette {
+      white-space: pre;
+      color: var(--accent-2);
+      font-size: 9px;
+      line-height: 1.1;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .lyric-prev {
+      font-size: 1em;
+      color: var(--fg-dim);
+      opacity: 0.4;
+      margin: 6px 0;
+    }
+
+    .lyric-curr {
+      font-size: 1.5em;
+      color: var(--fg-bright);
+      font-weight: bold;
+      margin: 10px 0;
+      text-shadow: 0 0 10px var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    .lyric-next {
+      font-size: 1em;
+      color: var(--fg-dim);
+      opacity: 0.7;
+      margin: 6px 0;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .bezel {
+        padding: 6px;
+      }
+
+      .terminal {
+        padding: 10px 12px 16px;
+        font-size: 12px;
+      }
+
+      .neofetch-ascii,
+      .ascii-banner {
+        font-size: 7px;
+      }
+
+      .statusbar {
+        font-size: 8px;
+      }
+
+      .statusbar-section {
+        padding: 0 8px;
+      }
+
+      .titlebar {
+        font-size: 10px;
+        height: 24px;
+      }
+
+      .ls-listing {
+        grid-template-columns: 1fr;
+      }
+
+      .ls-long {
+        grid-template-columns: auto auto 1fr;
+        font-size: 11px;
+        gap: 4px 10px;
+      }
+
+      .ls-long .ls-perms,
+      .ls-long .ls-size {
+        display: none;
+      }
+
+      .md {
+        padding-left: 10px;
+      }
+
+      .md h1 {
+        font-size: 1.2em;
+      }
+
+      .md h2 {
+        font-size: 1.05em;
+      }
+
+      .md pre {
+        padding: 8px 10px;
+        font-size: 0.85em;
+      }
+
+      .music-player {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .info-pane {
+        width: 100%;
+        padding-left: 0;
+        border-left: none;
+        border-top: 1px dashed var(--border);
+        padding-top: 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .cursor {
+        animation: none;
+        opacity: 1;
+      }
+
+      .flicker,
+      .phosphor-hum {
+        animation: none;
+        opacity: 0.4;
+      }
+
+      .output-line,
+      .man-page,
+      .composer,
+      .screen {
+        animation: none;
+      }
+
+      .ghost-text {
+        animation: none;
+        opacity: 0.55;
+      }
+    }
+  </style>
+</head>
+
+<body class="theme-locked">
+  <div class="bezel">
+    <div class="screen" id="screen">
+      <div class="titlebar">
+        <div class="titlebar-buttons">
+          <div class="tb-btn close"></div>
+          <div class="tb-btn min"></div>
+          <div class="tb-btn max"></div>
+        </div>
+        <div class="titlebar-title">guest@vishwa: ~/portfolio — tty1</div>
+        <div class="titlebar-info">80×24</div>
+      </div>
+      <div class="scanlines" id="scanlines"></div>
+      <div class="flicker"></div>
+      <div class="phosphor-hum"></div>
+      <div class="vignette"></div>
+
+      <div class="terminal" id="terminal">
+        <div class="output" id="output"></div>
+        <div class="prompt-line" id="prompt-line">
+          <span id="prompt-prefix" class="prompt-prefix"></span>
+          <span class="input-area"><span class="input-text" id="input-text"></span><span class="ghost-text"
+              id="ghost-text"></span><span class="cursor"></span></span>
+        </div>
+      </div>
+      <div class="statusbar">
+        <div class="statusbar-section"><span class="sb-label">MODE</span><span id="status-mode">GUEST</span></div>
+        <div class="statusbar-section"><span class="sb-label">CWD</span><span id="status-cwd">~/portfolio</span></div>
+        <div class="statusbar-section"><span class="sb-label">ENC</span>UTF-8</div>
+        <div class="statusbar-section" id="status-help">access required</div>
+        <div class="statusbar-section"><span class="sb-label">⌚</span><span id="status-clock">00:00:00</span></div>
+      </div>
+    </div>
+  </div>
+  <input type="text" class="hidden-input" id="hidden-input" autocomplete="off" autocorrect="off" autocapitalize="off"
+    spellcheck="false">
+
+  <script>
+    // ============================================================
+    //  VISHWA PAWAR — Terminal Portfolio
+    //  Phase 1: Minimalist Lock
+    //  Phase 2: Main Portfolio + Spotify Integration
+    // ============================================================
+
+    const ABOUT = {
+      name: 'vishwa prashant pawar',
+      role: 'AI & software engineer · final-year B.E. student',
+      location: 'mumbai, india',
+      phone: '+91 8483854915',
+      email: 'vishwapawar200421@gmail.com',
+      shell: '/bin/bash',
+      education: 'B.E. Artificial Intelligence & Data Science · Thadomal Shahani Engineering College, Mumbai University · 2022–2026 · CGPA 7.91/10',
+      bio: `Final-year B.E. candidate in Artificial Intelligence and Data Science with strong foundations in object-oriented design, algorithm design, data structures, and complexity analysis. Passionate about building AI-driven solutions and applying machine learning, deep learning, and data science techniques to solve real-world problems. Proven ability to design and develop end-to-end, multi-tiered applications using Java, Python, and React/Next.js, with hands-on experience in scalable system design, relational databases, and agile development.`,
+      highlights: [
+        'AI/ML: TensorFlow/Keras, scikit-learn, NLP, Deep Learning, Gen AI, RAG systems',
+        'Full-stack: React, Next.js, Node.js, Express, REST APIs, Docker',
+        'Languages: Java, Python, SQL, JavaScript',
+        'CS fundamentals: OOP, DSA, OS, Computer Networks, DBMS',
+      ],
+      contact: {
+        email: 'vishwapawar200421@gmail.com',
+        phone: '+91 8483854915',
+        github: 'github.com/vishwa-pawar',
+        linkedin: 'linkedin.com/in/vishwa-pawar',
+        location: 'Mumbai, India',
+      },
+    };
+
+    const EXPERIENCE = [
+      {
+        role: 'Quality Engineering Intern',
+        company: 'The Lonely Bag',
+        location: 'Mumbai, India (Remote)',
+        period: 'Jun 2025 – Aug 2025',
+        points: [
+          'Rapidly self-onboarded across web and mobile platforms in an Agile setup by independently studying Figma designs and historical bug reports, executing manual test cases, and leading daily defect updates in cross-functional war room meetings.',
+          'Advanced QA impact beyond surface reporting by leveraging Charles Proxy to inspect mobile network traffic, isolate frontend versus backend failures, and recommend stack-level fixes directly to developers.',
+        ],
+      },
+    ];
+
+    const PROJECTS = [
+      {
+        name: 'codecollab',
+        topic: 'web',
+        date: '2025-07-15',
+        stack: 'React, Node.js, Express, Socket.io, Docker, Yjs',
+        content: `# CodeCollab\n\n> Real-time collaborative coding environment · React, Node.js, Docker · 2025\n\nA real-time collaborative coding environment built for technical interviews, featuring shared code editing, live video, and server-side code execution.\n\n## Architecture & Features\n\n- **Real-time Sync:** Implemented shared code editing using Yjs for state synchronization, studying Operational Transformation (OT) and CRDT algorithms to resolve conflicting keystrokes.\n- **Scalable Backend:** Implemented Domain-Driven Design (DDD) architecture with Redis-backed WebSocket adapters for multi-instance scaling.\n- **Security:** Integrated JWT-based session protection for secure interview environments.\n- **Execution:** Server-side code execution pipeline for real-time testing.\n\n## Tech Stack\n\n- **Frontend:** React.js\n- **Backend:** Node.js, Express, Socket.io\n- **Infrastructure:** Docker, Redis`
+      },
+      {
+        name: 'financial-news-sentiment',
+        topic: 'ai',
+        date: '2025-02-10',
+        stack: 'Python, TensorFlow, Keras, NLTK, GloVe',
+        content: `# Financial News Sentiment Classifier\n\n> NLP & Deep Learning · Python, TensorFlow, Keras, GloVe · 2025\n\nAn end-to-end NLP pipeline that processes large corpora of financial headlines to classify sentiment, correlating signals with real stock price trends.\n\n## Architecture\n\n\`\`\`python\n# Pipeline: headline -> regex clean -> tokenize -> GloVe (300d) embed -> CNN + BiLSTM -> sentiment\nmodel = Sequential([\n    Embedding(vocab_size, 300, weights=[glove_matrix], input_length=maxlen),\n    Conv1D(64, 5, activation='relu'),\n    Bidirectional(LSTM(64)),\n    Dense(3, activation='softmax')  # positive / neutral / negative\n])\n\`\`\`\n\n## Key Outcomes\n\n- **Data Processing:** Optimized regex-based text cleaning, stopword removal, tokenization, and sequence padding for high-throughput vectorization.\n- **Model Performance:** Achieved an AUC of 0.80 on held-out test data.\n- **EDA & Evaluation:** Conducted comprehensive EDA using n-gram analysis and text length distributions, leveraging confusion matrices and ROC curves to evaluate model performance.`
+      },
+      {
+        name: 'real-estate-platform',
+        topic: 'web',
+        date: '2024-11-22',
+        stack: 'Next.js, Python, GROQ, Sanity CMS, MySQL, OAuth',
+        content: `# Real Estate Platform\n\n> End-to-End Web Application · Next.js, Python, GROQ · 2024\n\nA full-stack, multi-tiered web application with a React/Next.js frontend, headless Sanity CMS backend, and Python-based ML microservices for rent and sale price prediction.\n\n## Architecture\n\n\`\`\`\n┌──────────────┐    REST    ┌──────────────┐    GROQ    ┌─────────────┐\n│  Next.js UI  │ ─────────► │  API Routes  │ ────────►  │  Sanity CMS │\n└──────────────┘            └──────────────┘            └─────────────┘\n                                    │\n                                    ▼  REST\n                            ┌──────────────┐\n                            │  Python ML   │  ← price prediction\n                            │  microservice│\n                            └──────────────┘\n\`\`\`\n\n## Features\n\n- **Location-based property search** with relational database schemas backing filters.\n- **Google OAuth authentication** for secure user sessions.\n- **Dynamic listing management** at scale via headless CMS.\n- **ML price prediction** microservice for rent and sale estimates.`
+      },
+      {
+        name: 'rag-predictive-maintenance',
+        topic: 'ai',
+        date: '2025-04-05',
+        stack: 'Python, TensorFlow, Keras, FAISS, Streamlit',
+        content: `# RAG-Enabled Predictive Maintenance\n\n> AI-driven troubleshooting assistant · Python, TensorFlow, FAISS, Streamlit · 2025\n\nAn AI-driven predictive maintenance pipeline that processes continuous OBD-II telemetry to forecast Remaining Useful Life (RUL) and uses RAG to eliminate LLM hallucinations.\n\n## How It Works\n\n\`\`\`python\n# 1. Process OBD-II telemetry with 2-layer LSTM\n# 2. Apply rolling window features to denoise volatile sensor data\n# 3. Chunk OEM service manuals using Hugging Face embeddings\n# 4. Store in FAISS vector database to enforce strict metadata citations\n\ndef diagnose(sensor_reading):\n    relevant = faiss_db.search(embed(sensor_reading), k=5)\n    prompt = build_prompt(sensor_reading, relevant)\n    return llm.complete(prompt) # No hallucinations!\n\`\`\`\n\n## Key Outcomes\n\n- **Dual-Interface Dashboard:** Developed a Streamlit dashboard featuring interactive Plotly degradation visualizations for fleet managers and an LLM-powered Q&A assistant for mechanics.\n- **Production Robustness:** Ensured compatibility with custom TensorFlow layers.\n- **Zero Hallucinations:** Enforced strict metadata citations via FAISS vector database.`
+      },
+    ];
+
+    const SKILLS = {
+      languages: ['Java', 'Python', 'SQL', 'JavaScript'],
+      cs_fundamentals: ['OOP', 'Data Structures & Algorithms', 'Artificial Intelligence', 'Deep Learning & Generative AI Fundamentals', 'Computer Networks', 'OS', 'DBMS (MySQL)'],
+      systems: ['RESTful API Design', 'REST APIs', 'Domain-Driven Design (DDD)', 'Multi-tiered Systems', 'Agile Development'],
+      frameworks: ['React.js', 'Next.js', 'Node.js', 'Express', 'Socket.io', 'TensorFlow/Keras', 'scikit-learn', 'Pandas', 'NumPy', 'Yjs'],
+      tools: ['Git', 'GitHub', 'Docker', 'Redis', 'Charles Proxy', 'Figma', 'Streamlit', 'FAISS']
+    };
+
+    const EXTRACURRICULAR = [
+      { role: 'Treasurer', org: 'IETE-TSEC', period: '2024–25', detail: 'Managed end-to-end budgets and sponsorships for 5+ major technical events; led a 60-member marketing and logistics team to ensure resource efficiency and financial transparency.' },
+      { role: 'Delegate', org: 'IIT Bombay MUN', period: '—', detail: 'Represented Morocco and Hungary in high-pressure policy debates, developing skills in critical thinking, ambiguity handling, and structured argumentation.' },
+    ];
+
+    const TOPICS = ['ai', 'web', 'systems', 'experience', 'education', 'skills'];
+    const TOPIC_INFO = {
+      ai: 'AI/ML projects: deep learning, NLP, RAG, predictive systems.',
+      web: 'Full-stack web applications: Next.js, WebSockets, REST APIs.',
+      systems: 'Systems & architecture: multi-tiered, DDD, distributed, microservices.',
+      experience: 'Professional work experience and internships.',
+      education: 'Academic background and qualifications.',
+      skills: 'Technical skills across languages, frameworks, and CS fundamentals.',
+    };
+
+    const state = {
+      phase: 'lock', input: '', history: [], historyIdx: -1,
+      cwd: '~/portfolio', topic: null, scanlinesOn: true, sound: false,
+      theme: 'amber', ghostText: '', accessCode: '6137', attempts: 0, maxAttempts: 8,
+      musicPoll: null, musicTick: null, musicEq: null, musicCassette: null, lyricsData: null, lastLyricIdx: -1,
+      musicIdleTimer: null
+    };
+
+    const $output = document.getElementById('output');
+    const $inputText = document.getElementById('input-text');
+    const $ghostText = document.getElementById('ghost-text');
+    const $promptPrefix = document.getElementById('prompt-prefix');
+    const $terminal = document.getElementById('terminal');
+    const $scanlines = document.getElementById('scanlines');
+    const $hiddenInput = document.getElementById('hidden-input');
+    const $statusCwd = document.getElementById('status-cwd');
+    const $statusClock = document.getElementById('status-clock');
+    const $statusMode = document.getElementById('status-mode');
+    const $statusHelp = document.getElementById('status-help');
+    const $screen = document.getElementById('screen');
+
+    function escapeHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function print(html, className = '') {
+      const div = document.createElement('div');
+      div.className = 'output-line' + (className ? ' ' + className : '');
+      div.innerHTML = html; $output.appendChild(div); scrollToEnd(); return div;
+    }
+    function printRaw(html) {
+      const div = document.createElement('div');
+      div.className = 'output-line'; div.innerHTML = html;
+      $output.appendChild(div); scrollToEnd(); return div;
+    }
+    function scrollToEnd() { $terminal.scrollTop = $terminal.scrollHeight; }
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function playKeyClick() {
+      if (!state.sound) return;
+      const ctx = ensureAudio(); if (!ctx) return;
+      const bufferSize = Math.floor(ctx.sampleRate * 0.025);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+      const source = ctx.createBufferSource(); source.buffer = buffer;
+      const filter = ctx.createBiquadFilter(); filter.type = 'bandpass'; filter.frequency.value = 1800 + Math.random() * 600; filter.Q.value = 0.7;
+      const gain = ctx.createGain(); gain.gain.setValueAtTime(0.07, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
+      source.connect(filter); filter.connect(gain); gain.connect(ctx.destination); source.start();
+    }
+    function playBeep() {
+      const ctx = ensureAudio(); if (!ctx) return;
+      const osc = ctx.createOscillator(); const gain = ctx.createGain();
+      osc.type = 'square'; osc.frequency.value = 220;
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.15);
+    }
+
+    function renderInput() { $inputText.textContent = state.input; $ghostText.textContent = state.ghostText; }
+    function updatePrompt() {
+      if (state.phase === 'lock' || state.phase === 'unlocking') {
+        $promptPrefix.style.display = 'block'; $promptPrefix.style.width = '100%';
+        $promptPrefix.innerHTML = `<span class="prompt-guest">┌──(guest@vishwa)-[~/portfolio]</span><br><span class="prompt-guest">└─$ </span>`;
+        $statusCwd.textContent = '~/portfolio'; $statusMode.textContent = 'GUEST'; $statusHelp.textContent = 'access required';
+      } else {
+        $promptPrefix.style.display = 'inline'; $promptPrefix.style.width = 'auto';
+        $promptPrefix.innerHTML = `<span class="prompt-user">vishwa</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$ </span>`;
+        $statusCwd.textContent = state.cwd; $statusMode.textContent = 'INSERT'; $statusHelp.textContent = "type 'help' for commands";
+      }
+    }
+
+    function getFilesInCwd() {
+      if (state.cwd === '~') return [
+        { name: 'about.md', kind: 'readme', date: '2025-08-01' }, { name: 'projects/', kind: 'dir', date: '2025-04-05' },
+        { name: 'experience/', kind: 'dir', date: '2025-08-01' }, { name: 'skills.md', kind: 'markdown', date: '2025-08-01' },
+        { name: 'education.md', kind: 'markdown', date: '2025-08-01' }, { name: 'extracurricular.md', kind: 'markdown', date: '2025-08-01' },
+        { name: 'resume.md', kind: 'readme', date: '2025-08-01' }, { name: 'contact.md', kind: 'file', date: '2025-08-01' },
+        { name: 'README.md', kind: 'readme', date: '2025-08-01' },
+      ];
+      if (state.cwd === '~/projects') return PROJECTS.map(p => ({ name: p.name + '/', kind: 'dir', topic: p.topic, date: p.date }));
+      if (state.cwd === '~/experience') return EXPERIENCE.map(e => ({ name: e.company.toLowerCase().replace(/\s+/g, '-') + '.md', kind: 'markdown', date: '2025-08-01' }));
+      const topic = state.cwd.replace('~/', '');
+      if (topic === 'ai') return PROJECTS.filter(p => p.topic === 'ai').map(p => ({ name: p.name + '/', kind: 'dir', topic: p.topic, date: p.date }));
+      if (topic === 'web') return PROJECTS.filter(p => p.topic === 'web').map(p => ({ name: p.name + '/', kind: 'dir', topic: p.topic, date: p.date }));
+      if (topic === 'systems') return [{ name: 'multi-tiered-apps.md', kind: 'markdown', date: '2025-08-01' }, { name: 'rest-apis.md', kind: 'markdown', date: '2025-08-01' }, { name: 'microservices.md', kind: 'markdown', date: '2025-08-01' }];
+      if (topic === 'experience') return EXPERIENCE.map(e => ({ name: e.company.toLowerCase().replace(/\s+/g, '-') + '.md', kind: 'markdown', date: '2025-08-01' }));
+      if (topic === 'education') return [{ name: 'tsec-mumbai.md', kind: 'markdown', date: '2025-08-01' }];
+      if (topic === 'skills') return [{ name: 'languages.md', kind: 'markdown', date: '2025-08-01' }, { name: 'frameworks.md', kind: 'markdown', date: '2025-08-01' }, { name: 'cs-fundamentals.md', kind: 'markdown', date: '2025-08-01' }, { name: 'systems-design.md', kind: 'markdown', date: '2025-08-01' }, { name: 'tools-and-version-control.md', kind: 'markdown', date: '2025-08-01' }];
+      return [];
+    }
+
+    function checkMastermind(guess, code) {
+      let result = ['×', '×', '×', '×']; let codeChars = code.split(''); let guessChars = guess.split('');
+      for (let i = 0; i < 4; i++) {
+        if (guessChars[i] === codeChars[i]) { result[i] = '●'; codeChars[i] = null; guessChars[i] = null; }
+      }
+      for (let i = 0; i < 4; i++) {
+        if (guessChars[i] !== null) {
+          let idx = codeChars.indexOf(guessChars[i]);
+          if (idx !== -1) { result[i] = '○'; codeChars[idx] = null; }
+        }
+      }
+      return result.join(' ');
+    }
+
+    async function executeLockCommand(cmd) {
+      print(`<span class="prompt-guest">┌──(guest@vishwa)-[~/portfolio]</span><br><span class="prompt-guest">└─$</span> ${escapeHtml(cmd)}`);
+      state.input = ''; renderInput();
+      const parts = cmd.split(/\s+/); const name = parts[0].toLowerCase(); const args = parts.slice(1);
+
+      if (name === 'crack') {
+        if (!args[0] || !/^\d{4}$/.test(args[0])) { print('<span class="text-error">Usage: crack <4-digits></span>'); return; }
+        state.attempts++; const guess = args[0]; const result = checkMastermind(guess, state.accessCode);
+        printRaw(`<div class="guess-line">${guess.split('').join(' ')}</div>`);
+        printRaw(`<div class="result-line">${result}</div>`);
+        print(''); print(`<span class="text-dim">Attempts: ${state.attempts} / ${state.maxAttempts}</span>`);
+        if (guess === state.accessCode) { await unlockSequence(); }
+        else if (state.attempts >= state.maxAttempts) {
+          print('<span class="text-error">SYSTEM LOCKED. Too many attempts. Rebooting...</span>');
+          await sleep(1000); state.attempts = 0; $output.innerHTML = ''; await lockSequence();
+        }
+      } else if (name === 'help' || name === 'skip' || name === 'hint') {
+        print('<span class="text-dim">> Brute force the 4-digit key using Mastermind rules.</span>');
+        print('<span class="text-dim">> ● = correct digit, correct position.</span>');
+        print('<span class="text-dim">> ○ = correct digit, wrong position.</span>');
+        print('<span class="text-dim">> × = digit not in code.</span>');
+        print('<span class="text-dim">> Type \'sudo bypass\' if you are a busy recruiter.</span>');
+      } else if (name === 'sudo' && args[0] === 'bypass') { await unlockSequence(); }
+      else if (name === 'clear') { $output.innerHTML = ''; }
+      else if (name === 'ls') { print('README.txt  welcome.sh  .config/'); }
+      else if (name === 'cat') {
+        if (args[0] === 'README.txt') print('Nothing here is what it seems. Find the key.');
+        else if (args[0] === 'welcome.sh') print('cat: welcome.sh: Permission denied');
+        else print(`cat: ${escapeHtml(args[0] || '')}: No such file or directory`);
+      } else if (name === 'whoami') { print('guest'); }
+      else if (name === 'pwd') { print('/home/guest/portfolio'); }
+      else if (cmd.trim() === '') { /* do nothing */ }
+      else { print(`<span class="text-error">command not found: ${escapeHtml(name)}</span>`); }
+    }
+
+    async function unlockSequence() {
+      state.phase = 'unlocking'; updatePrompt(); print(''); await sleep(300);
+      print('<span class="text-success">> ACCESS GRANTED</span>'); await sleep(400);
+      print('<span class="text-dim">> Decrypting filesystem...</span>'); await sleep(800);
+
+      $screen.classList.add('flicker-hard'); await sleep(400); $screen.classList.remove('flicker-hard');
+
+      document.body.classList.remove('theme-locked'); document.body.classList.add('theme-amber');
+      $output.innerHTML = ''; state.cwd = '~'; state.topic = null;
+      await bootSequence();
+    }
+
+    const commands = {
+      help: cmdHelp, ls: cmdLs, cat: cmdCat, cd: cmdCd, whoami: cmdWhoami, mail: cmdMail, clear: cmdClear,
+      history: cmdHistory, pwd: cmdPwd, echo: cmdEcho, date: cmdDate, neofetch: cmdNeofetch, theme: cmdTheme,
+      sound: cmdSound, scanlines: cmdScanlines, sudo: cmdSudo, exit: cmdExit, man: cmdMan,
+      vim: () => cmdEditor(['vim']), vi: () => cmdEditor(['vim']), emacs: () => cmdEditor(['emacs']), nano: () => cmdEditor(['nano']),
+      about: () => commands.whoami([]), readme: () => commands.cat(['README.md']), contact: () => commands.cat(['contact.md']),
+      resume: cmdResume, skills: () => commands.cat(['skills.md']), experience: () => commands.cat(['experience/the-lonely-bag.md']),
+      education: () => commands.cat(['education.md']), projects: () => commands.ls(['projects/']),
+      music: cmdMusic, spotify: cmdMusic, ogtaste: cmdMusic,
+    };
+
+    function cmdHelp(args) {
+      if (args[0] && commands[args[0]]) { printManPage(args[0]); return; }
+      const html = `
+<div class="man-page">
+  <div class="man-header">PORTFOLIO(1) &nbsp;&nbsp;&nbsp;&nbsp;User Commands &nbsp;&nbsp;&nbsp;&nbsp;PORTFOLIO(1)</div>
+  <div class="man-section">NAME</div>
+  <div class="man-entry"><span class="man-cmd">portfolio</span> — interactive terminal-style portfolio for ${escapeHtml(ABOUT.name)}</div>
+  <div class="man-section">SYNOPSIS</div>
+  <div class="man-entry"><span class="man-cmd">portfolio</span> [COMMAND] [ARGS ...]</div>
+  <div class="man-section">DESCRIPTION</div>
+  <div class="man-entry">An interactive, terminal-emulated portfolio. Navigate projects, experience, skills, and education using Unix-like commands. Tab-completion is supported. Arrow keys cycle command history.</div>
+  <div class="man-section">CORE COMMANDS</div>
+  <div class="man-entry"><span class="man-cmd">ls [-la]</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;list files and directories. -la for detailed listing.</div>
+  <div class="man-entry"><span class="man-cmd">cat &lt;file&gt;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;display a file's contents (markdown rendered).</div>
+  <div class="man-entry"><span class="man-cmd">cd &lt;topic&gt;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;change directory. 'cd ..' goes back. topics: ${TOPICS.join(', ')}</div>
+  <div class="man-entry"><span class="man-cmd">whoami</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;display professional summary.</div>
+  <div class="man-entry"><span class="man-cmd">mail [addr]</span> &nbsp;&nbsp;&nbsp;&nbsp;open a contact composer (mailto).</div>
+  <div class="man-entry"><span class="man-cmd">resume</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;print full resume in terminal format.</div>
+  <div class="man-entry"><span class="man-cmd">music</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;view Vishwa's OG music taste (live Spotify).</div>
+  <div class="man-entry"><span class="man-cmd">skills</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shortcut to view skills.md</div>
+  <div class="man-entry"><span class="man-cmd">projects</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shortcut to list projects</div>
+  <div class="man-entry"><span class="man-cmd">experience</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shortcut to view work experience</div>
+  <div class="man-entry"><span class="man-cmd">help [cmd]</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;display this screen, or help for a specific command.</div>
+  <div class="man-section">SYSTEM COMMANDS</div>
+  <div class="man-entry"><span class="man-cmd">clear</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clear the terminal screen.</div>
+  <div class="man-entry"><span class="man-cmd">history</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show command history.</div>
+  <div class="man-entry"><span class="man-cmd">pwd</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;print current working directory.</div>
+  <div class="man-entry"><span class="man-cmd">neofetch</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;display system info with ASCII art.</div>
+  <div class="man-entry"><span class="man-cmd">theme &lt;n&gt;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;switch color theme: amber, green, cyan.</div>
+  <div class="man-entry"><span class="man-cmd">sound [on|off]</span> &nbsp;&nbsp;toggle typing sound effects.</div>
+  <div class="man-entry"><span class="man-cmd">scanlines</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;toggle CRT scanline overlay.</div>
+  <div class="man-entry"><span class="man-cmd">echo &lt;txt&gt;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;echo text back to the terminal.</div>
+  <div class="man-entry"><span class="man-cmd">date</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;show current date and time.</div>
+  <div class="man-entry"><span class="man-cmd">man &lt;cmd&gt;</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;display manual for a specific command.</div>
+  <div class="man-section">TOPICS (cd into these)</div>
+  ${TOPICS.map(t => `<div class="man-entry"><span class="man-cmd">${t}</span> &nbsp;&nbsp;${escapeHtml(TOPIC_INFO[t])}</div>`).join('')}
+  <div class="man-section">EXAMPLES</div>
+  <div class="man-entry">$ ls</div><div class="man-entry">$ cat about.md</div><div class="man-entry">$ cd projects &amp;&amp; ls</div>
+  <div class="man-entry">$ cat projects/financial-news-sentiment/</div><div class="man-entry">$ cd ai &amp;&amp; ls</div>
+  <div class="man-entry">$ resume</div><div class="man-entry">$ music</div><div class="man-entry">$ mail ${escapeHtml(ABOUT.contact.email)}</div>
+  <div class="man-section">KEYBOARD</div>
+  <div class="man-entry"><span class="man-cmd">Tab</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tab-completion (press twice to accept ghost text)</div>
+  <div class="man-entry"><span class="man-cmd">↑ / ↓</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cycle command history</div>
+  <div class="man-entry"><span class="man-cmd">Ctrl+L</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clear screen</div>
+  <div class="man-entry"><span class="man-cmd">Ctrl+C</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cancel current input</div>
+  <div class="man-footer">PORTFOLIO OS v3.0 · ${new Date().getFullYear()} · ${escapeHtml(ABOUT.name)} · PORTFOLIO(1)</div>
+</div>`;
+      printRaw(html);
+    }
+
+    function printManPage(cmd) {
+      const helpText = {
+        ls: { synopsis: 'ls [-la] [path]', desc: 'List files and directories in the current location. Use -la for detailed listing with permissions, size, and date.' },
+        cat: { synopsis: 'cat <file>', desc: 'Display the contents of a file. Markdown files (.md) are rendered with formatting. Available files: about.md, skills.md, education.md, resume.md, contact.md, README.md, projects/*/, experience/*' },
+        cd: { synopsis: 'cd <topic>', desc: `Change current directory. Available topics: ${TOPICS.join(', ')}, projects, experience. Use 'cd ..' to go up, 'cd ~' to go home.` },
+        whoami: { synopsis: 'whoami', desc: 'Display professional summary, highlights, and contact info for ' + ABOUT.name + '.' },
+        mail: { synopsis: 'mail [address]', desc: "Open a contact composer. If address is omitted, defaults to " + ABOUT.email + "." },
+        resume: { synopsis: 'resume', desc: 'Print the full resume in formatted terminal output — summary, skills, experience, projects, education, extracurriculars.' },
+        music: { synopsis: 'music', desc: 'Fetches live data from Spotify API to show what Vishwa is currently listening to, or his last played track.' },
+        help: { synopsis: 'help [command]', desc: 'Display this help screen, or detailed help for a specific command.' },
+        clear: { synopsis: 'clear', desc: 'Clear the terminal screen.' },
+        history: { synopsis: 'history', desc: 'Show previously entered commands in the current session.' },
+        pwd: { synopsis: 'pwd', desc: 'Print the current working directory.' },
+        neofetch: { synopsis: 'neofetch', desc: 'Display system information with ASCII art.' },
+        theme: { synopsis: 'theme <name>', desc: 'Switch color theme. Options: amber (default), green, cyan.' },
+        sound: { synopsis: 'sound [on|off]', desc: 'Toggle typing sound effects. Without args, toggles current state.' },
+        scanlines: { synopsis: 'scanlines [on|off]', desc: 'Toggle CRT scanline overlay. Without args, toggles current state.' },
+        echo: { synopsis: 'echo <text>', desc: 'Echo text back to the terminal.' },
+        date: { synopsis: 'date', desc: 'Show the current date and time.' },
+        man: { synopsis: 'man <command>', desc: 'Display the manual page for a specific command.' },
+      };
+      const info = helpText[cmd] || { synopsis: cmd, desc: 'No help available.' };
+      printRaw(`
+<div class="man-page">
+  <div class="man-header">${cmd.toUpperCase()}(1) &nbsp;&nbsp;&nbsp;&nbsp;User Commands &nbsp;&nbsp;&nbsp;&nbsp;${cmd.toUpperCase()}(1)</div>
+  <div class="man-section">NAME</div>
+  <div class="man-entry"><span class="man-cmd">${escapeHtml(cmd)}</span> — ${escapeHtml(info.desc.split('.')[0])}.</div>
+  <div class="man-section">SYNOPSIS</div>
+  <div class="man-entry"><span class="man-cmd">${escapeHtml(info.synopsis)}</span></div>
+  <div class="man-section">DESCRIPTION</div>
+  <div class="man-entry">${escapeHtml(info.desc)}</div>
+  <div class="man-footer">${cmd.toUpperCase()}(1)</div>
+</div>`);
+    }
+
+    function cmdLs(args) {
+      const long = args.some(a => a.startsWith('-') && (a.includes('l') || a.includes('a')));
+      const pathArg = args.find(a => !a.startsWith('-'));
+      let files;
+      if (pathArg === 'projects' || pathArg === 'projects/') files = PROJECTS.map(p => ({ name: p.name + '/', kind: 'dir', topic: p.topic, date: p.date }));
+      else if (pathArg === 'experience' || pathArg === 'experience/') files = EXPERIENCE.map(e => ({ name: e.company.toLowerCase().replace(/\s+/g, '-') + '.md', kind: 'markdown', date: '2025-08-01' }));
+      else files = getFilesInCwd();
+      if (files.length === 0) { print('<span class="text-dim">(empty)</span>'); return; }
+      if (long) {
+        printRaw('<div class="ls-long">' + files.map(f => {
+          const isDir = f.name.endsWith('/'); const perms = isDir ? 'drwxr-xr-x' : '-rw-r--r--';
+          const size = isDir ? '4096' : String(Math.floor(Math.random() * 8) + 1) + 'K'; const date = f.date || '2025-08-01';
+          const nameClass = isDir ? 'dir' : (f.kind === 'markdown' || f.kind === 'readme' ? 'markdown' : '');
+          return `<span class="ls-perms">${perms}</span><span class="ls-size">${size}</span><span class="ls-date">${date}</span><span class="ls-name ${nameClass}">${escapeHtml(f.name)}</span>`;
+        }).join('') + '</div>');
+      } else {
+        printRaw('<div class="ls-listing">' + files.map(f => {
+          const isDir = f.name.endsWith('/'); const icon = isDir ? '▸' : (f.kind === 'markdown' ? '◌' : (f.kind === 'readme' ? '◉' : '◦'));
+          const cls = isDir ? 'dir' : (f.kind === 'markdown' || f.kind === 'readme' ? 'markdown' : 'file');
+          return `<div class="ls-item ${cls}"><span class="ls-icon">${icon}</span><span>${escapeHtml(f.name)}</span></div>`;
+        }).join('') + '</div>');
+      }
+    }
+
+    function cmdCat(args) {
+      if (args.length === 0) { print('<span class="text-error">cat: missing file operand</span>'); print('<span class="text-dim">usage: cat &lt;file&gt;</span>'); return; }
+      const filename = args[0]; let content = null;
+      if (filename === 'about.md' || filename === 'README.md') {
+        content = `# ${ABOUT.name}\n\n> ${ABOUT.role} · ${ABOUT.location}\n\n${ABOUT.bio}\n\n## Highlights\n\n${ABOUT.highlights.map(h => `- ${h}`).join('\n')}\n\n## Education\n\n${ABOUT.education}\n\n## Contact\n\n- **email:** ${ABOUT.contact.email}\n- **phone:** ${ABOUT.contact.phone}\n- **github:** ${ABOUT.contact.github}\n- **linkedin:** ${ABOUT.contact.linkedin}\n- **location:** ${ABOUT.contact.location}\n\n---\n\n*Type 'mail ${ABOUT.contact.email}' to send me a message.*\n*Type 'resume' to see my full resume.*`;
+      } else if (filename === 'contact.md') {
+        content = `# Contact\n\n- **email:** ${ABOUT.contact.email}\n- **phone:** ${ABOUT.contact.phone}\n- **github:** ${ABOUT.contact.github}\n- **linkedin:** ${ABOUT.contact.linkedin}\n- **location:** ${ABOUT.contact.location}\n\n---\n\nType 'mail ${ABOUT.contact.email}' to compose a message directly in this terminal.`;
+      } else if (filename === 'skills.md') {
+        content = `# Skills\n\n## Languages\n\n${SKILLS.languages.map(s => `- ${s}`).join('\n')}\n\n## CS Fundamentals\n\n${SKILLS.cs_fundamentals.map(s => `- ${s}`).join('\n')}\n\n## Systems & Architecture\n\n${SKILLS.systems.map(s => `- ${s}`).join('\n')}\n\n## Frameworks & Libraries\n\n${SKILLS.frameworks.map(s => `- ${s}`).join('\n')}\n\n## Tools & Version Control\n\n${SKILLS.tools.map(s => `- ${s}`).join('\n')}`;
+      } else if (filename === 'education.md') {
+        content = `# Education\n\n## Thadomal Shahani Engineering College, Mumbai University\n\n- **Degree:** Bachelor of Engineering\n- **Branch:** Artificial Intelligence and Data Science\n- **Duration:** 2022 – 2026\n- **CGPA:** 7.91 / 10.0\n\n---\n\nCoursework covers object-oriented design, algorithm design, data structures, complexity analysis, artificial intelligence, neural networks, deep learning, computer networks, operating systems, and relational databases.`;
+      } else if (filename === 'extracurricular.md') {
+        content = `# Extra-Curricular\n\n${EXTRACURRICULAR.map(e => `## ${e.role} — ${e.org}\n\n> ${e.period}\n\n${e.detail}`).join('\n\n---\n\n')}`;
+      } else if (filename === 'resume.md') { cmdResume([]); return; }
+      else if (filename.startsWith('projects/')) {
+        const name = filename.slice('projects/'.length).replace(/\/$/, ''); const project = PROJECTS.find(p => p.name === name);
+        if (project) content = project.content;
+      } else if (filename.startsWith('experience/')) {
+        const name = filename.slice('experience/'.length).replace(/\.md$/, ''); const exp = EXPERIENCE.find(e => e.company.toLowerCase().replace(/\s+/g, '-') === name);
+        if (exp) content = `# ${exp.role} — ${exp.company}\n\n> ${exp.location} · ${exp.period}\n\n${exp.points.map(p => `- ${p}`).join('\n')}`;
+      } else if (filename.startsWith('skills/')) {
+        const name = filename.slice('skills/'.length).replace(/\.md$/, '');
+        const map = {
+          'languages': SKILLS.languages,
+          'frameworks': SKILLS.frameworks,
+          'cs-fundamentals': SKILLS.cs_fundamentals,
+          'systems-design': SKILLS.systems,
+          'tools-and-version-control': SKILLS.tools
+        };
+        if (map[name]) content = `# ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}\n\n${map[name].map(s => `- ${s}`).join('\n')}`;
+      } else {
+        const project = PROJECTS.find(p => p.name === filename || p.name + '/' === filename);
+        if (project) content = project.content;
+      }
+      if (content === null) { print(`<span class="text-error">cat: ${escapeHtml(filename)}: No such file or directory</span>`); print('<span class="text-dim">try: ls · cat about.md · cat skills.md · cat projects/</span>'); return; }
+      printRaw(`<div class="md">${renderMarkdown(content)}</div>`);
+    }
+
+    function cmdCd(args) {
+      if (args.length === 0 || args[0] === '~' || args[0] === '/') { state.cwd = '~'; state.topic = null; updatePrompt(); return; }
+      const target = args[0];
+      if (target === '..') { if (state.cwd !== '~') { state.cwd = '~'; state.topic = null; updatePrompt(); } return; }
+      if (target === 'projects' && state.cwd === '~') { state.cwd = '~/projects'; updatePrompt(); return; }
+      if (target === 'experience' && state.cwd === '~') { state.cwd = '~/experience'; updatePrompt(); return; }
+      if (TOPICS.includes(target) && state.cwd === '~') {
+        state.cwd = '~/' + target; state.topic = target; updatePrompt();
+        print(`<span class="text-dim">— filtering by topic: ${target} —</span>`); print(`<span class="text-dim">${escapeHtml(TOPIC_INFO[target])}</span>`); return;
+      }
+      const proj = PROJECTS.find(p => p.name === target);
+      if (proj) {
+        state.cwd = '~/projects/' + proj.name; state.topic = proj.topic; updatePrompt();
+        print(`<span class="text-dim">— viewing project: ${proj.name} —</span>`); print(`<span class="text-dim">type 'cat ${proj.name}/' to see details</span>`); return;
+      }
+      print(`<span class="text-error">cd: ${escapeHtml(target)}: No such topic or directory</span>`);
+      print(`<span class="text-dim">available: ${TOPICS.join(', ')}, projects, experience</span>`);
+    }
+
+    function cmdWhoami() {
+      const html = `<div class="md">
+<h1>${escapeHtml(ABOUT.name)}</h1>
+<p class="meta">${escapeHtml(ABOUT.role)} · ${escapeHtml(ABOUT.location)} · session #${Math.floor(Math.random() * 9000 + 1000)}</p>
+<p>${escapeHtml(ABOUT.bio)}</p>
+<h2>Highlights</h2><ul>${ABOUT.highlights.map(h => `<li>${escapeHtml(h)}</li>`).join('')}</ul>
+<h2>Education</h2><p>${escapeHtml(ABOUT.education)}</p>
+<h2>Contact</h2>
+<div style="display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-family: monospace;">
+  <span class="text-dim">email</span><span>${escapeHtml(ABOUT.contact.email)}</span>
+  <span class="text-dim">phone</span><span>${escapeHtml(ABOUT.contact.phone)}</span>
+  <span class="text-dim">github</span><span><a href="https://${escapeHtml(ABOUT.contact.github)}" target="_blank">${escapeHtml(ABOUT.contact.github)}</a></span>
+  <span class="text-dim">linkedin</span><span><a href="https://${escapeHtml(ABOUT.contact.linkedin)}" target="_blank">${escapeHtml(ABOUT.contact.linkedin)}</a></span>
+  <span class="text-dim">location</span><span>${escapeHtml(ABOUT.contact.location)}</span>
+</div>
+<hr>
+<p class="meta">Type 'cat resume.md' for full CV. Type 'mail' to compose a message.</p>
+</div>`;
+      printRaw(html);
+    }
+
+    function cmdResume() {
+      const html = `<div class="md">
+<h1>${escapeHtml(ABOUT.name.toUpperCase())}</h1>
+<p class="meta">${escapeHtml(ABOUT.contact.email)} · ${escapeHtml(ABOUT.contact.phone)} · ${escapeHtml(ABOUT.contact.location)}</p>
+<h2>Professional Summary</h2><p>${escapeHtml(ABOUT.bio)}</p>
+<h2>Technical Skills</h2>
+<p><strong>Languages:</strong> ${SKILLS.languages.join(', ')}</p>
+<p><strong>CS Fundamentals:</strong> ${SKILLS.cs_fundamentals.join(', ')}</p>
+<p><strong>Systems & Architecture:</strong> ${SKILLS.systems.join(', ')}</p>
+<p><strong>Frameworks & Libraries:</strong> ${SKILLS.frameworks.join(', ')}</p>
+<p><strong>Tools & Version Control:</strong> ${SKILLS.tools.join(', ')}</p>
+<h2>Professional Experience</h2>
+ ${EXPERIENCE.map(e => `<h3>${escapeHtml(e.role)} — ${escapeHtml(e.company)}</h3><p class="meta">${escapeHtml(e.location)} · ${escapeHtml(e.period)}</p><ul>${e.points.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>`).join('')}
+<h2>Projects</h2>
+ ${PROJECTS.map(p => `<h3>${escapeHtml(p.name)}</h3><p class="meta">${escapeHtml(p.stack)} · ${escapeHtml(p.date)}</p><p>${escapeHtml(p.content.split('\n').filter(l => !l.startsWith('#') && !l.startsWith('>') && l.trim() !== '')[0] || '')}</p>`).join('')}
+<h2>Education</h2><p>${escapeHtml(ABOUT.education)}</p>
+<h2>Extra-Curricular & Leadership</h2>
+ ${EXTRACURRICULAR.map(e => `<h3>${escapeHtml(e.role)} — ${escapeHtml(e.org)}</h3><p class="meta">${escapeHtml(e.period)}</p><p>${escapeHtml(e.detail)}</p>`).join('')}
+<hr><p class="meta">Type 'mail ${escapeHtml(ABOUT.contact.email)}' to get in touch.</p>
+</div>`;
+      printRaw(html);
+    }
+
+    function cmdMail(args) {
+      const addr = args[0] || ABOUT.contact.email;
+      const html = `<div class="composer">
+  <div class="composer-header"><span>compose — mutt 2.2.13</span><span class="text-dim">^X sends · Esc cancels</span></div>
+  <div class="composer-body">
+    <div class="composer-field"><span class="composer-label">To:</span><input type="text" class="composer-input" id="cmp-to" value="${escapeHtml(addr)}"></div>
+    <div class="composer-field"><span class="composer-label">From:</span><input type="text" class="composer-input" id="cmp-from" placeholder="your email"></div>
+    <div class="composer-field"><span class="composer-label">Subject:</span><input type="text" class="composer-input" id="cmp-subject" placeholder="opportunity / collaboration / hello"></div>
+    <div class="composer-field" style="align-items: flex-start;"><span class="composer-label">Body:</span><textarea class="composer-textarea" id="cmp-body" placeholder="type your message..."></textarea></div>
+    <div class="composer-actions">
+      <button class="composer-btn" id="cmp-send">Send [Ctrl+X]</button>
+      <button class="composer-btn secondary" id="cmp-cancel">Cancel [Esc]</button>
+      <span class="composer-hint">tip: opens your email client</span>
+    </div>
+  </div>
+</div>`;
+      printRaw(html);
+      const sendBtn = document.getElementById('cmp-send'); const cancelBtn = document.getElementById('cmp-cancel');
+      const toInput = document.getElementById('cmp-to'); const subjectInput = document.getElementById('cmp-subject');
+      const bodyInput = document.getElementById('cmp-body'); const fromInput = document.getElementById('cmp-from');
+      setTimeout(() => { if (toInput) toInput.focus(); }, 80);
+      function doSend() {
+        const to = toInput.value.trim(); const subject = subjectInput.value.trim() || '(no subject)';
+        const body = bodyInput.value.trim(); const from = fromInput.value.trim();
+        if (!to) { print('<span class="text-error">mail: no recipient specified</span>'); return; }
+        const params = new URLSearchParams();
+        if (subject) params.set('subject', subject);
+        if (body) params.set('body', body + (from ? '\n\n— ' + from : ''));
+        const mailtoUrl = `mailto:${to}?${params.toString()}`;
+        print(`<span class="text-success">↗ opening mail client for ${escapeHtml(to)}...</span>`);
+        print(`<span class="text-dim">subject: ${escapeHtml(subject)}</span>`);
+        try { window.location.href = mailtoUrl; } catch (e) { window.open(mailtoUrl, '_blank'); }
+        if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sent ✓'; }
+        if (cancelBtn) cancelBtn.disabled = true;
+      }
+      function doCancel() {
+        if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Cancelled'; }
+        if (cancelBtn) cancelBtn.disabled = true;
+        print('<span class="text-dim">— composer dismissed —</span>');
+      }
+      if (sendBtn) sendBtn.addEventListener('click', doSend);
+      if (cancelBtn) cancelBtn.addEventListener('click', doCancel);
+      [toInput, subjectInput, bodyInput, fromInput].forEach(inp => {
+        if (!inp) return;
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); doCancel(); }
+          else if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) { e.preventDefault(); e.stopPropagation(); doSend(); }
+        });
+      });
+    }
+
+    function cmdClear() { $output.innerHTML = ''; }
+    function cmdHistory() {
+      if (state.history.length === 0) { print('<span class="text-dim">(no history yet)</span>'); return; }
+      state.history.forEach((cmd, i) => print(`<span class="text-dim">${String(i + 1).padStart(4, ' ')}</span>  ${escapeHtml(cmd)}`));
+    }
+    function cmdPwd() { print(state.cwd); }
+    function cmdEcho(args) { print(escapeHtml(args.join(' '))); }
+    function cmdDate() { print(new Date().toString()); }
+
+    function cmdNeofetch() {
+      const ascii = `   ╔═══════════════╗\n   ║  ┌─────────┐  ║\n   ║  │ > _     │  ║\n   ║  │         │  ║\n   ║  │         │  ║\n   ║  └─────────┘  ║\n   ╚═══════════════╝\n       ║║    ║║\n      ══╝╝  ╚╝══`;
+      const info = `<div class="nf-line"><span class="nf-label">${escapeHtml(ABOUT.name)}</span>@<span style="color:var(--accent-2)">portfolio</span></div>
+<div class="nf-line"><span style="color:var(--fg-dim)">─────────────────────</span></div>
+<div class="nf-line"><span class="nf-label">OS</span><span class="nf-sep">:</span>portfolio OS v3.0</div>
+<div class="nf-line"><span class="nf-label">Host</span><span class="nf-sep">:</span>CRT Terminal TTY/1</div>
+<div class="nf-line"><span class="nf-label">Kernel</span><span class="nf-sep">:</span>6.4.7-portfolio</div>
+<div class="nf-line"><span class="nf-label">Uptime</span><span class="nf-sep">:</span>${Math.floor(performance.now() / 1000)}s</div>
+<div class="nf-line"><span class="nf-label">Shell</span><span class="nf-sep">:</span>${escapeHtml(ABOUT.shell)} 5.2.15</div>
+<div class="nf-line"><span class="nf-label">Editor</span><span class="nf-sep">:</span>vim 9.0 (always)</div>
+<div class="nf-line"><span class="nf-label">User</span><span class="nf-sep">:</span>${escapeHtml(ABOUT.name)}</div>
+<div class="nf-line"><span class="nf-label">Role</span><span class="nf-sep">:</span>${escapeHtml(ABOUT.role)}</div>
+<div class="nf-line"><span class="nf-label">Edu</span><span class="nf-sep">:</span>B.E. AI & DS · CGPA 7.91</div>
+<div class="nf-line"><span class="nf-label">CPU</span><span class="nf-sep">:</span>Intel Core i7 @ 3.2GHz</div>
+<div class="nf-line"><span class="nf-label">Memory</span><span class="nf-sep">:</span>16GB / 16GB</div>
+<div class="nf-line"><span class="nf-label">Resolution</span><span class="nf-sep">:</span>80x24 chars</div>
+<div class="nf-line"><span class="nf-label">Theme</span><span class="nf-sep">:</span>${state.theme} phosphor</div>
+<div class="nf-line"><span class="nf-label">Projects</span><span class="nf-sep">:</span>${PROJECTS.length}</div>
+<div class="nf-line"><span class="nf-label">Experience</span><span class="nf-sep">:</span>${EXPERIENCE.length} role(s)</div>
+<div class="nf-line"><span class="nf-label">Skills</span><span class="nf-sep">:</span>${SKILLS.languages.length + SKILLS.frameworks.length + SKILLS.cs_fundamentals.length + SKILLS.systems.length + SKILLS.tools.length} entries</div>
+<div class="neofetch-colors">
+  <div class="neofetch-color" style="background:#ff5e5e"></div><div class="neofetch-color" style="background:#ffbd2e"></div>
+  <div class="neofetch-color" style="background:#28ca42"></div><div class="neofetch-color" style="background:#5fb3d4"></div>
+  <div class="neofetch-color" style="background:#b388ff"></div><div class="neofetch-color" style="background:#ff79c6"></div>
+  <div class="neofetch-color" style="background:#e8c468"></div><div class="neofetch-color" style="background:#8a7548"></div>
+</div>`;
+      printRaw(`<div class="neofetch"><pre class="neofetch-ascii">${ascii}</pre><div class="neofetch-info">${info}</div></div>`);
+    }
+
+    function cmdTheme(args) {
+      const theme = args[0];
+      if (!theme) { print(`<span class="text-dim">current theme: ${state.theme}</span>`); print('<span class="text-dim">available: amber, green, cyan</span>'); return; }
+      if (['amber', 'green', 'cyan'].includes(theme)) {
+        document.body.classList.remove('theme-amber', 'theme-green', 'theme-cyan');
+        document.body.classList.add('theme-' + theme); state.theme = theme;
+        print(`<span class="text-success">→ theme switched to: ${theme}</span>`);
+      } else { print(`<span class="text-error">theme: unknown theme '${escapeHtml(theme)}'</span>`); print('<span class="text-dim">available: amber, green, cyan</span>'); }
+    }
+    function cmdSound(args) {
+      const arg = args[0];
+      if (arg === 'on') state.sound = true; else if (arg === 'off') state.sound = false; else state.sound = !state.sound;
+      ensureAudio();
+      print(`<span class="text-success">→ typing sound: ${state.sound ? 'ON' : 'OFF'}</span>`);
+      if (state.sound) { playKeyClick(); print('<span class="text-dim">(try typing — subtle clicks)</span>'); }
+    }
+    function cmdScanlines(args) {
+      const arg = args[0];
+      if (arg === 'on') state.scanlinesOn = true; else if (arg === 'off') state.scanlinesOn = false; else state.scanlinesOn = !state.scanlinesOn;
+      $scanlines.classList.toggle('off', !state.scanlinesOn);
+      print(`<span class="text-success">→ CRT scanlines: ${state.scanlinesOn ? 'ON' : 'OFF'}</span>`);
+    }
+    function cmdSudo() {
+      print('<span class="text-error">[sudo] password for vishwa: </span><span class="text-dim">********</span>');
+      setTimeout(() => {
+        print('<span class="text-error">vishwa is not in the sudoers file. This incident will be reported.</span>');
+        print('<span class="text-dim">(nice try. — but you already have root.)</span>');
+      }, 800);
+    }
+    function cmdEditor(args) {
+      const editor = (args[0] || '').toLowerCase();
+      if (editor === 'vim' || editor === 'vi') {
+        print('<span class="text-dim">-- vim 9.0 --</span>');
+        setTimeout(() => {
+          print('<span class="text-error">E: Cannot open display.</span>');
+          print('<span class="text-dim">(this is a terminal portfolio, not a text editor. use \'cat\' to read files.)</span>');
+          print('<span class="text-dim">— also, emacs users will be judged. —</span>');
+        }, 400);
+      } else if (editor === 'emacs') {
+        print('<span class="text-dim">Loading emacs... 1.2GB...</span>');
+        setTimeout(() => { print('<span class="text-error">OOM killer invoked.</span>'); print('<span class="text-dim">(emacs is a great OS, lacking only a decent editor.)</span>'); }, 600);
+      } else {
+        print('<span class="text-dim">nano: opening...</span>');
+        setTimeout(() => { print('<span class="text-dim">nano: ^X to exit (you\'re already in a terminal, friend.)</span>'); }, 300);
+      }
+    }
+    function cmdExit() {
+      print('<span class="text-dim">logout</span>');
+      setTimeout(() => {
+        print(''); print('<span class="text-dim">Connection to portfolio closed.</span>');
+        print(`<span class="text-dim">— thanks for visiting, ${ABOUT.name.split(' ')[0]}. reload to reconnect. —</span>`);
+      }, 400);
+    }
+    function cmdMan(args) {
+      if (!args[0]) { print('<span class="text-error">What manual page do you want?</span>'); return; }
+      if (commands[args[0]]) printManPage(args[0]);
+      else print(`<span class="text-error">No manual entry for ${escapeHtml(args[0])}</span>`);
+    }
+
+    // ----- Spotify Music Command (with precise sync logic) -----
+
+    async function cmdMusic() {
+      if (state.musicPoll) clearInterval(state.musicPoll);
+      if (state.musicTick) clearInterval(state.musicTick);
+      if (state.musicEq) clearInterval(state.musicEq);
+      if (state.musicCassette) clearInterval(state.musicCassette);
+      if (state.musicIdleTimer) clearTimeout(state.musicIdleTimer);
+      state.musicPoll = state.musicTick = state.musicEq = state.musicCassette = null;
+      state.musicIdleTimer = null;
+      state.lyricsData = null;
+      state.lastLyricIdx = -1;
+
+      const musicId = `music-${Date.now()}`;
+      let currentTrack = null;
+      let lyricsRequestId = 0; // guards against stale/out-of-order lyrics responses
+      let isIdle = false;
+      let trackProfile = { energy: 0.6, pulseMs: 150 }; // simulated per-track "feel", replaced on track change
+      const IDLE_THRESHOLD_MS = 90 * 1000; // dim the panel after 90s with nothing playing
+
+      const fmtTime = (ms) => {
+        if (!Number.isFinite(ms) || ms < 0) ms = 0;
+        const min = Math.floor(ms / 60000);
+        const sec = Math.floor((ms % 60000) / 1000);
+        return `${min}:${sec.toString().padStart(2, '0')}`;
+      };
+
+      // Scrub-line style: played track as a heavy line, a cursor dot at the current
+      // position, and unplayed track as light dots - reads more like a DAW timeline
+      // than a loading bar.
+      const progressBar = (rawPct) => {
+        const totalBlocks = 16;
+        // Clamp so a stray >1 (Spotify drift, seeking) never produces a bad index
+        const pct = Math.max(0, Math.min(1, Number.isFinite(rawPct) ? rawPct : 0));
+        const pos = Math.round(pct * (totalBlocks - 1));
+        let bar = '';
+        for (let i = 0; i < totalBlocks; i++) {
+          if (i < pos) bar += '━';
+          else if (i === pos) bar += '●';
+          else bar += '·';
+        }
+        return bar;
+      };
+
+      // Deterministic per-track "feel" - NOT real Spotify audio data. Spotify locked
+      // audio-features/audio-analysis (real energy/tempo) behind extended-quota access
+      // in Nov 2024 and isn't granting that to new individual-dev apps, so this isn't
+      // available to us. Instead we hash the track+artist into a stable seed so each
+      // song consistently gets its own simulated energy/pulse-speed instead of every
+      // song looking like identical random noise.
+      function seededRng(seedStr) {
+        let h = 1779033703 ^ seedStr.length;
+        for (let i = 0; i < seedStr.length; i++) {
+          h = Math.imul(h ^ seedStr.charCodeAt(i), 3432918353);
+          h = (h << 13) | (h >>> 19);
+        }
+        return function () {
+          h = Math.imul(h ^ (h >>> 16), 2246822507);
+          h = Math.imul(h ^ (h >>> 13), 3266489909);
+          h ^= h >>> 16;
+          return (h >>> 0) / 4294967296;
+        };
+      }
+
+      function getTrackProfile(track, artist) {
+        const rng = seededRng(`${track}::${artist}`);
+        const energy = 0.35 + rng() * 0.6; // 0.35 - 0.95, biases how "tall" the EQ runs
+        const simulatedBpm = 78 + Math.floor(rng() * 90); // 78 - 168, purely simulated
+        const pulseMs = Math.max(90, Math.min(320, Math.round(30000 / simulatedBpm)));
+        return { energy, pulseMs };
+      }
+
+      // LRC Parser: Converts [00:12.34] Text -> { time: 12.34, text: 'Text' }
+      function parseLRC(lrc) {
+        if (!lrc) return null;
+        const lines = lrc.split('\n');
+        const parsed = [];
+        const regex = /\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/;
+        for (const line of lines) {
+          const match = line.match(regex);
+          if (match) {
+            const min = parseInt(match[1]);
+            const sec = parseInt(match[2]);
+            const ms = parseInt(match[3]);
+            const time = min * 60 + sec + ms / 1000;
+            const text = match[4].trim();
+            if (text) parsed.push({ time, text });
+          }
+        }
+        return parsed.length > 0 ? parsed : null;
+      }
+
+      // Karaoke Renderer
+      function renderLyrics(currentMs) {
+        if (!state.lyricsData) return;
+        const sec = currentMs / 1000;
+        let currIdx = -1;
+
+        for (let i = 0; i < state.lyricsData.length; i++) {
+          if (sec >= state.lyricsData[i].time) {
+            currIdx = i;
+          } else {
+            break;
+          }
+        }
+
+        if (currIdx !== state.lastLyricIdx) {
+          state.lastLyricIdx = currIdx;
+          const el = document.getElementById(`${musicId}-lyrics`);
+          if (!el) return;
+
+          let html = '';
+          if (currIdx > 0) html += `<div class="lyric-prev">${escapeHtml(state.lyricsData[currIdx - 1].text)}</div>`;
+          if (currIdx >= 0) {
+            html += `<div class="lyric-curr">▶ ${escapeHtml(state.lyricsData[currIdx].text)}</div>`;
+          } else {
+            html += `<div class="lyric-prev">♪ ♫ ♪</div>`;
+            html += `<div class="lyric-curr">♪ ♫ ♪</div>`;
+          }
+          if (state.lyricsData[currIdx + 1]) html += `<div class="lyric-next">${escapeHtml(state.lyricsData[currIdx + 1].text)}</div>`;
+          if (state.lyricsData[currIdx + 2]) html += `<div class="lyric-next" style="opacity: 0.4">${escapeHtml(state.lyricsData[currIdx + 2].text)}</div>`;
+
+          el.innerHTML = html;
+        }
+      }
+
+      // Draw initial scaffold (Two Column Layout)
+      printRaw(`
+<div class="music-player md" id="${musicId}">
+  <div class="lyrics-pane" id="${musicId}-lyrics">
+    <div class="lyric-prev">♪ ♫ ♪</div>
+    <div class="lyric-curr">Fetching lyrics...</div>
+    <div class="lyric-next">♪ ♫ ♪</div>
+  </div>
+  <div class="info-pane">
+    <pre class="cassette" id="${musicId}-cassette">  ╔═════════════╗
+┌─╗║   ◉     ◉   ║╗─┐
+│ ║║             ║║ │
+└─╝║   ◉     ◉   ║╝─┘
+  ╚═════════════╝</pre>
+    <h2>♫ Into Vishwa's Spotify</h2>
+    <p><strong>Track:</strong>&nbsp;&nbsp;&nbsp;<span id="${musicId}-track">Loading...</span></p>
+    <p><strong>Artist:</strong>&nbsp;&nbsp;&nbsp;<span id="${musicId}-artist"></span></p>
+    <p><strong>Album:</strong>&nbsp;&nbsp;&nbsp;&nbsp;<span id="${musicId}-album"></span></p>
+    <div style="margin: 10px 0; display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="composer-btn" id="${musicId}-play-btn">▶ Play</button>
+      <button class="composer-btn secondary" id="${musicId}-pause-btn">⏸ Pause</button>
+    </div>
+    <p class="visualizer" id="${musicId}-eq">▁▁▁▁▁▁▁▁▁▁▁▁</p>
+    <p>Progress: [<span id="${musicId}-bar">················</span>]</p>
+    <p><span id="${musicId}-time">0:00 / 0:00</span></p>
+    <p class="meta" id="${musicId}-status">► Fetching...</p>
+  </div>
+</div>`);
+
+      // --- Helper: Lyrics ---
+      async function fetchLyrics(track, artist, lyricsId) {
+        const requestId = ++lyricsRequestId; // snapshot - if a newer request starts before this resolves, we bail
+
+        try {
+          let cleanTrack = track.split(' (')[0].split(' [')[0].trim();
+          let cleanArtist = artist.split(',')[0].split('&')[0].split(' feat.')[0].trim();
+
+          const res = await fetch(`/api/lyrics?artist=${encodeURIComponent(cleanArtist)}&track=${encodeURIComponent(cleanTrack)}`);
+
+          // A newer fetchLyrics call has since started (song changed again) - discard this stale result
+          if (requestId !== lyricsRequestId) return;
+
+          if (!res.ok) throw new Error('API Error');
+          const data = await res.json();
+
+          if (requestId !== lyricsRequestId) return; // re-check after the second await
+
+          const el = document.getElementById(lyricsId);
+
+          const parsed = parseLRC(data.synced);
+          if (parsed) {
+            state.lyricsData = parsed;
+            state.lastLyricIdx = -1;
+            renderLyrics(0);
+          } else if (data.plain) {
+            state.lyricsData = null;
+            if (el) el.innerHTML = `<div class="lyric-curr">${escapeHtml(data.plain.split('\n').slice(0, 4).join(' '))}</div>`;
+          } else {
+            state.lyricsData = null;
+            if (el) el.innerHTML = `<div class="lyric-curr">Lyrics not found.</div>`;
+          }
+        } catch (e) {
+          if (requestId !== lyricsRequestId) return;
+          const el = document.getElementById(lyricsId);
+          if (el) el.innerHTML = `<div class="lyric-curr">Failed to fetch lyrics.</div>`;
+        }
+      }
+
+      // --- Helper: Visualizer ---
+      function startVisualizer(eqId, energy, pulseMs) {
+        const bars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+        if (state.musicEq) clearInterval(state.musicEq);
+        state.musicEq = setInterval(() => {
+          let eq = '';
+          for (let i = 0; i < 12; i++) {
+            // Skew toward taller bars as energy rises, instead of a flat random range
+            const r = Math.random() * energy + Math.random() * (1 - energy) * 0.3;
+            const idx = Math.min(bars.length - 1, Math.floor(r * bars.length));
+            eq += bars[idx];
+          }
+          const el = document.getElementById(eqId);
+          if (el) el.textContent = eq;
+          else clearInterval(state.musicEq);
+        }, pulseMs);
+      }
+      function stopVisualizer(eqId) {
+        if (state.musicEq) clearInterval(state.musicEq);
+        state.musicEq = null;
+        const el = document.getElementById(eqId);
+        if (el) el.textContent = '▁▁▁▁▁▁▁▁▁▁▁▁';
+      }
+
+      // --- Helper: Spinning Cassette ---
+      function startCassette(casId, pulseMs) {
+        const reels = ['◉', '◎', '○', '◎'];
+        let idx = 0;
+        if (state.musicCassette) clearInterval(state.musicCassette);
+        state.musicCassette = setInterval(() => {
+          const el = document.getElementById(casId);
+          if (!el) { clearInterval(state.musicCassette); return; }
+          const r = reels[idx % 4];
+          el.textContent = `  ╔═════════════╗
+┌─╗║   ${r}     ${r}   ║╗─┐
+│ ║║             ║║ │
+└─╝║   ${r}     ${r}   ║╝─┘
+  ╚═════════════╝`;
+          idx++;
+        }, Math.round(pulseMs * 1.6)); // reels turn slower than the EQ pulses, stays readable
+      }
+      function stopCassette(casId) {
+        if (state.musicCassette) clearInterval(state.musicCassette);
+        state.musicCassette = null;
+        const el = document.getElementById(casId);
+        if (el) el.textContent = `  ╔═════════════╗
+┌─╗║   ◉     ◉   ║╗─┐
+│ ║║             ║║ │
+└─╝║   ◉     ◉   ║╝─┘
+  ╚═════════════╝`;
+      }
+
+      // --- Helper: Idle / sleep state ---
+      // If nothing's played for a while, dim the panel instead of leaving it looking
+      // "live" forever on a stalled/paused session.
+      function setStatus(text) {
+        const statusEl = document.getElementById(`${musicId}-status`);
+        if (statusEl) statusEl.textContent = isIdle ? `${text}   z z z` : text;
+      }
+      function applyIdleVisual(active) {
+        const el = document.getElementById(musicId);
+        if (!el) return;
+        const infoPane = el.querySelector('.info-pane');
+        if (infoPane) infoPane.style.opacity = active ? '0.45' : '1';
+      }
+      function scheduleIdle() {
+        if (state.musicIdleTimer || isIdle) return;
+        state.musicIdleTimer = setTimeout(() => {
+          isIdle = true;
+          state.musicIdleTimer = null;
+          applyIdleVisual(true);
+        }, IDLE_THRESHOLD_MS);
+      }
+      function cancelIdle() {
+        if (state.musicIdleTimer) { clearTimeout(state.musicIdleTimer); state.musicIdleTimer = null; }
+        if (isIdle) { isIdle = false; applyIdleVisual(false); }
+      }
+
+      // --- Play/Pause Controls ---
+      document.getElementById(`${musicId}-play-btn`).addEventListener('click', async () => {
+        try {
+          await fetch('/api/spotify/play', { method: 'PUT' });
+          fetchAndUpdate(); // Force an immediate sync after clicking
+        } catch (e) { console.error('Play error:', e); }
+      });
+
+      document.getElementById(`${musicId}-pause-btn`).addEventListener('click', async () => {
+        try {
+          await fetch('/api/spotify/pause', { method: 'PUT' });
+          fetchAndUpdate(); // Force an immediate sync after clicking
+        } catch (e) { console.error('Pause error:', e); }
+      });
+
+      // --- Main Sync Loop ---
+      async function fetchAndUpdate() {
+        try {
+          const res = await fetch('/api/spotify');
+          if (!res.ok) return;
+          const data = await res.json();
+
+          const el = document.getElementById(musicId);
+          if (!el) {
+            clearInterval(state.musicPoll); clearInterval(state.musicTick);
+            clearInterval(state.musicEq); clearInterval(state.musicCassette);
+            state.musicPoll = state.musicTick = state.musicEq = state.musicCassette = null;
+            return;
+          }
+
+          const hasTrack = Boolean(data.track);
+
+          if (hasTrack && data.track !== currentTrack) {
+            currentTrack = data.track;
+            trackProfile = getTrackProfile(data.track, data.artist);
+            state.lyricsData = null;
+            state.lastLyricIdx = -1;
+            document.getElementById(`${musicId}-track`).textContent = data.track;
+            document.getElementById(`${musicId}-artist`).textContent = data.artist;
+            document.getElementById(`${musicId}-album`).textContent = data.album;
+
+            fetchLyrics(data.track, data.artist, `${musicId}-lyrics`);
+          } else if (!hasTrack && currentTrack !== null) {
+            // Playback stopped entirely / no track info from the API - don't try to fetch lyrics for "undefined"
+            currentTrack = null;
+            lyricsRequestId++; // invalidate any in-flight lyrics request
+            state.lyricsData = null;
+            state.lastLyricIdx = -1;
+          }
+
+          if (data.isPlaying) {
+            cancelIdle();
+            document.getElementById(`${musicId}-bar`).textContent = progressBar(data.progress_ms / data.duration_ms);
+            document.getElementById(`${musicId}-time`).textContent = `${fmtTime(data.progress_ms)} / ${fmtTime(data.duration_ms)}`;
+            setStatus(`► Currently playing ${data.device ? 'on ' + data.device : ''}`);
+
+            startVisualizer(`${musicId}-eq`, trackProfile.energy, trackProfile.pulseMs);
+            startCassette(`${musicId}-cassette`, trackProfile.pulseMs);
+            renderLyrics(data.progress_ms);
+
+            // Always re-anchor the ticker to the server's authoritative position on every poll.
+            // This is what actually fixes desync on skip/seek: instead of trying to detect every
+            // way the track could have changed, we just never let the ticker run stale for more
+            // than one poll interval (5s) against outdated duration/position data.
+            if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
+
+            let localMs = data.progress_ms;
+            const durationMs = data.duration_ms;
+            state.musicTick = setInterval(() => {
+              localMs += 1000;
+              if (localMs >= durationMs) {
+                clearInterval(state.musicTick); state.musicTick = null;
+                fetchAndUpdate();
+                return;
+              }
+              document.getElementById(`${musicId}-bar`).textContent = progressBar(localMs / durationMs);
+              document.getElementById(`${musicId}-time`).textContent = `${fmtTime(localMs)} / ${fmtTime(durationMs)}`;
+              renderLyrics(localMs);
+            }, 1000);
+          } else if (data.progress_ms !== undefined) {
+            if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
+            stopVisualizer(`${musicId}-eq`);
+            stopCassette(`${musicId}-cassette`);
+
+            document.getElementById(`${musicId}-bar`).textContent = progressBar(data.progress_ms / data.duration_ms);
+            document.getElementById(`${musicId}-time`).textContent = `${fmtTime(data.progress_ms)} / ${fmtTime(data.duration_ms)}`;
+            setStatus(`► Paused ${data.device ? 'on ' + data.device : ''}`);
+            renderLyrics(data.progress_ms);
+            scheduleIdle();
+          } else {
+            if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
+            stopVisualizer(`${musicId}-eq`);
+            stopCassette(`${musicId}-cassette`);
+            setStatus(`► Played ${data.played_ago || 'recently'}`);
+            scheduleIdle();
+            const lEl = document.getElementById(`${musicId}-lyrics`);
+            if (lEl && state.lyricsData === null) lEl.innerHTML = `<div class="lyric-curr">Press play to see lyrics...</div>`;
+          }
+        } catch (e) {
+          console.error('Sync error:', e);
+        }
+      }
+
+      await fetchAndUpdate();
+      state.musicPoll = setInterval(fetchAndUpdate, 5000);
+    }
+
+    // ----- Tab completion & Markdown (unchanged) -----
+    function getCompletionTargets() {
+      const files = getFilesInCwd(); const names = files.map(f => f.name.replace(/\/$/, ''));
+      if (state.cwd === '~') return [...names, ...TOPICS, 'projects', 'experience'];
+      if (state.cwd === '~/projects') return PROJECTS.map(p => p.name);
+      return [...names];
+    }
+    function longestCommonPrefix(arr) {
+      if (arr.length === 0) return ''; let prefix = arr[0];
+      for (let i = 1; i < arr.length; i++) {
+        while (arr[i].indexOf(prefix) !== 0) { prefix = prefix.slice(0, -1); if (prefix.length === 0) return ''; }
+      }
+      return prefix;
+    }
+    function tabComplete() {
+      if (state.input.length === 0) return;
+      const parts = state.input.split(/\s+/); const last = parts[parts.length - 1];
+      if (parts.length === 1) {
+        const cmds = Object.keys(commands).filter(c => c.startsWith(last));
+        if (cmds.length === 1) { state.input = cmds[0] + ' '; state.ghostText = ''; renderInput(); playKeyClick(); }
+        else if (cmds.length > 1) {
+          const common = longestCommonPrefix(cmds);
+          if (common.length > last.length) { state.ghostText = common.slice(last.length); }
+          else { print(`<span class="text-dim">${escapeHtml(state.input)}</span>`); print(cmds.map(c => `  <span class="text-info">${c}</span>`).join('  ')); state.ghostText = ''; }
+          renderInput();
+        } return;
+      }
+      const targets = getCompletionTargets();
+      const matches = targets.filter(t => t.toLowerCase().startsWith(last.toLowerCase()));
+      if (matches.length === 1) {
+        const m = matches[0];
+        if (state.ghostText && state.input + state.ghostText === m) { state.input = m; state.ghostText = ''; }
+        else { parts[parts.length - 1] = m; state.input = parts.join(' '); state.ghostText = ''; }
+        renderInput(); playKeyClick();
+      } else if (matches.length > 1) {
+        const common = longestCommonPrefix(matches);
+        if (common.length > last.length) {
+          if (state.ghostText && state.input + state.ghostText === common) { parts[parts.length - 1] = common; state.input = parts.join(' '); state.ghostText = ''; }
+          else { state.ghostText = common.slice(last.length); }
+        } else {
+          print(`<span class="text-dim">${escapeHtml(state.input)}</span>`);
+          print(matches.map(m => `  <span class="text-info">${escapeHtml(m)}</span>`).join('  '));
+          state.ghostText = '';
+        }
+        renderInput();
+      } else { state.ghostText = ''; renderInput(); playBeep(); }
+    }
+    function renderMarkdown(text) {
+      const lines = text.split('\n'); let html = '';
+      let inCode = false, inList = false, inOrdered = false; let codeBuffer = [];
+      function closeList() { if (inList) { html += inOrdered ? '</ol>' : '</ul>'; inList = false; inOrdered = false; } }
+      for (const line of lines) {
+        if (line.startsWith('```')) {
+          if (inCode) { html += `<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`; codeBuffer = []; inCode = false; }
+          else { closeList(); inCode = true; }
+          continue;
+        }
+        if (inCode) { codeBuffer.push(line); continue; }
+        if (line.startsWith('# ')) { closeList(); html += `<h1>${inline(line.slice(2))}</h1>`; }
+        else if (line.startsWith('## ')) { closeList(); html += `<h2>${inline(line.slice(3))}</h2>`; }
+        else if (line.startsWith('### ')) { closeList(); html += `<h3>${inline(line.slice(4))}</h3>`; }
+        else if (/^\d+\.\s/.test(line)) {
+          if (!inList || !inOrdered) { closeList(); html += '<ol>'; inList = true; inOrdered = true; }
+          html += `<li>${inline(line.replace(/^\d+\.\s/, ''))}</li>`;
+        } else if (line.startsWith('- ') || line.startsWith('* ')) {
+          if (!inList || inOrdered) { closeList(); html += '<ul>'; inList = true; inOrdered = false; }
+          html += `<li>${inline(line.slice(2))}</li>`;
+        } else if (line.startsWith('> ')) { closeList(); html += `<blockquote>${inline(line.slice(2))}</blockquote>`; }
+        else if (line.trim() === '---') { closeList(); html += '<hr>'; }
+        else if (line.trim() === '') { closeList(); }
+        else { closeList(); html += `<p>${inline(line)}</p>`; }
+      }
+      closeList();
+      if (inCode) html += `<pre><code>${escapeHtml(codeBuffer.join('\n'))}</code></pre>`;
+      return html;
+    }
+    function inline(text) {
+      return escapeHtml(text)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    }
+
+    async function executeCommand() {
+      if (state.ghostText) { state.input += state.ghostText; state.ghostText = ''; }
+      const cmd = state.input.trim();
+      if (state.phase === 'lock') { await executeLockCommand(cmd); return; }
+      print(`<span class="prompt-user">vishwa</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$</span> ${escapeHtml(cmd)}`);
+      state.input = '';
+      if (cmd) {
+        state.history.push(cmd); state.historyIdx = state.history.length;
+        const chain = cmd.split('&&').map(s => s.trim()).filter(Boolean);
+        for (const sub of chain) {
+          const parts = sub.split(/\s+/); const name = parts[0]; const args = parts.slice(1);
+          if (commands[name]) { try { commands[name](args); } catch (e) { print(`<span class="text-error">error: ${escapeHtml(e.message)}</span>`); } }
+          else { print(`<span class="text-error">command not found: ${escapeHtml(name)}</span>`); print('<span class="text-dim">type \'help\' for available commands</span>'); break; }
+        }
+      }
+      renderInput(); scrollToEnd();
+    }
+    function typeChar(ch) {
+      if (state.ghostText) { state.input += state.ghostText; state.ghostText = ''; }
+      state.input += ch; renderInput(); playKeyClick();
+    }
+    function backspace() {
+      if (state.ghostText) { state.ghostText = ''; renderInput(); playKeyClick(); return; }
+      if (state.input.length > 0) { state.input = state.input.slice(0, -1); renderInput(); playKeyClick(); }
+    }
+    function historyPrev() {
+      if (state.history.length === 0) return;
+      if (state.historyIdx > 0) { state.historyIdx--; state.input = state.history[state.historyIdx]; state.ghostText = ''; renderInput(); playKeyClick(); }
+    }
+    function historyNext() {
+      if (state.history.length === 0) return;
+      if (state.historyIdx < state.history.length - 1) { state.historyIdx++; state.input = state.history[state.historyIdx]; }
+      else { state.historyIdx = state.history.length; state.input = ''; }
+      state.ghostText = ''; renderInput(); playKeyClick();
+    }
+    function handleKeydown(e) {
+      if (state.phase === 'unlocking' || state.phase === 'boot') return;
+      const active = document.activeElement;
+      if (active && active !== $hiddenInput && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+      if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); cmdClear(); return; }
+      if (e.ctrlKey && (e.key === 'c' || e.key === 'C')) {
+        e.preventDefault();
+        if (state.input.length > 0 || state.ghostText.length > 0) {
+          const shown = state.input + state.ghostText;
+          if (state.phase === 'lock') print(`<span class="prompt-guest">┌──(guest@vishwa)-[~/portfolio]</span><br><span class="prompt-guest">└─$</span> ${escapeHtml(shown)}<span class="text-error">^C</span>`);
+          else print(`<span class="prompt-user">vishwa</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$</span> ${escapeHtml(shown)}<span class="text-error">^C</span>`);
+          state.input = ''; state.ghostText = ''; renderInput();
+        } return;
+      }
+      if (e.key === 'Enter') { e.preventDefault(); executeCommand(); return; }
+      if (e.key === 'Backspace') { e.preventDefault(); backspace(); return; }
+      if (e.key === 'Tab') { e.preventDefault(); if (state.phase === 'unlocked') tabComplete(); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); historyPrev(); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); historyNext(); return; }
+      if (e.key === 'Home' || e.key === 'End' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); return; }
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault(); typeChar(e.key); if ($hiddenInput) $hiddenInput.value = '';
+      }
+    }
+
+    async function lockSequence() {
+      state.phase = 'lock'; state.attempts = 0; updatePrompt();
+      await sleep(800);
+
+      print('<span class="text-dim">vishwa-os 5.15.0-portfolio #1 SMP</span>');
+      await sleep(300);
+      print('<span class="text-dim">[ OK ] Mounting /dev/portfolio...</span>');
+      await sleep(250);
+      print('<span class="text-dim">[ OK ] Initializing CRT phosphor emulation...</span>');
+      await sleep(250);
+      print('<span class="text-dim">[ OK ] System integrity check passed.</span>');
+      await sleep(400);
+      print('');
+      print('<span class="text-bright">SYSTEM LOCKED</span>');
+      await sleep(400);
+      print('<span class="text-dim">> 4-digit access key required to spawn root shell.</span>');
+      await sleep(300);
+      print('<span class="text-dim">> Brute force the key. Use: crack <4-digits></span>');
+      print('');
+    }
+
+    async function bootSequence() {
+      state.phase = 'boot'; updatePrompt();
+      const banner = `██╗   ██╗██╗███████╗██╗  ██╗██╗    ██╗ █████╗ 
+██║   ██║██║██╔════╝██║  ██║██║    ██║██╔══██╗
+██║   ██║██║███████╗███████║██║ █╗ ██║███████║
+╚██╗ ██╔╝██║╚════██║██╔══██║██║███╗██║██╔══██║
+ ╚████╔╝ ██║███████║██║  ██║╚███╔███╔╝██║  ██║
+  ╚═══╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝ ╚═╝  ╚═╝`;
+      printRaw(`<pre class="ascii-banner">${banner}</pre>`);
+      print('<span class="text-dim">— portfolio OS v3.0 · interactive shell —</span>'); print(''); await sleep(150);
+      const bootLines = [
+        { text: '[ <span class="text-success">OK</span> ] Initializing portfolio OS v3.0...', delay: 120 },
+        { text: '[ <span class="text-success">OK</span> ] Mounting /dev/keyboard → /dev/input', delay: 110 },
+        { text: '[ <span class="text-success">OK</span> ] Mounting /dev/screen → /dev/tty1', delay: 110 },
+        { text: '[ <span class="text-success">OK</span> ] Loading character ROM... 256 glyphs', delay: 140 },
+        { text: '[ <span class="text-success">OK</span> ] Initializing phosphor decay simulation', delay: 130 },
+        { text: `[ <span class="text-info">..</span> ] Loading profile: ${escapeHtml(ABOUT.name)}`, delay: 120 },
+        { text: `[ <span class="text-info">..</span> ] Loading projects: ${PROJECTS.length} entries`, delay: 120 },
+        { text: `[ <span class="text-info">..</span> ] Loading experience: ${EXPERIENCE.length} role(s)`, delay: 120 },
+        { text: '[ <span class="text-success">OK</span> ] Calibrating CRT scanline generator', delay: 130 },
+        { text: '[ <span class="text-success">OK</span> ] Starting interactive shell (bash 5.2.15)', delay: 180 },
+      ];
+      for (const line of bootLines) { print(line.text); await sleep(line.delay); }
+      await sleep(180); print('');
+      print(`<span class="text-bright">Welcome to portfolio OS v3.0 — ${escapeHtml(ABOUT.name)}</span>`);
+      print(`<span class="text-dim">${escapeHtml(ABOUT.role)}</span>`);
+      print('<span class="text-dim">Type \'help\' to see available commands. Type \'whoami\' for summary. Type \'resume\' for full CV.</span>');
+      print('<span class="text-dim">Tab completes. Up/Down arrows cycle history. Ctrl+L clears. Try: ls, cd projects, cat about.md</span>');
+      print(''); print(`<span class="text-dim">— last login: never · session #${Math.floor(Math.random() * 9000 + 1000)} —</span>`); print('');
+      state.phase = 'unlocked'; state.history = []; state.historyIdx = -1; renderInput();
+    }
+
+    function updateClock() {
+      const d = new Date(); const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0'); const s = String(d.getSeconds()).padStart(2, '0');
+      if ($statusClock) $statusClock.textContent = `${h}:${m}:${s}`;
+    }
+
+    function init() {
+      document.addEventListener('keydown', handleKeydown);
+      if ($hiddenInput) {
+        $hiddenInput.addEventListener('input', (e) => {
+          const val = e.target.value;
+          if (val && state.phase !== 'unlocking' && state.phase !== 'boot') {
+            for (const ch of val) { if (ch.length === 1) typeChar(ch); }
+            e.target.value = '';
+          }
+        });
+        $hiddenInput.addEventListener('keydown', (e) => {
+          if (['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) e.preventDefault();
+        });
+      }
+      $terminal.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if ($hiddenInput) $hiddenInput.focus({ preventScroll: true });
+      });
+      if ($hiddenInput) $hiddenInput.focus({ preventScroll: true });
+      document.addEventListener('click', (e) => {
+        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        if ($hiddenInput) $hiddenInput.focus({ preventScroll: true });
+      });
+      updateClock(); setInterval(updateClock, 1000);
+      lockSequence();
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
