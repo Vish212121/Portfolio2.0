@@ -9,7 +9,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=VT323&display=swap"
     rel="stylesheet">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23050a05'/%3E%3Cg fill='%2333ff66'%3E%3Ccircle cx='50' cy='50' r='9'/%3E%3Ccircle cx='80' cy='50' r='5'/%3E%3Ccircle cx='76' cy='65' r='5'/%3E%3Ccircle cx='65' cy='76' r='5'/%3E%3Ccircle cx='50' cy='80' r='5'/%3E%3Ccircle cx='35' cy='76' r='5'/%3E%3Ccircle cx='24' cy='65' r='5'/%3E%3Ccircle cx='20' cy='50' r='5'/%3E%3Ccircle cx='24' cy='35' r='5'/%3E%3Ccircle cx='35' cy='24' r='5'/%3E%3Ccircle cx='50' cy='20' r='5'/%3E%3Ccircle cx='65' cy='24' r='5'/%3E%3Ccircle cx='76' cy='35' r='5'/%3E%3C/g%3E%3C/svg%3E">
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23050a05'/%3E%3Cg fill='%2333ff66'%3E%3Ccircle cx='50' cy='50' r='9'/%3E%3Ccircle cx='80' cy='50' r='5'/%3E%3Ccircle cx='76' cy='65' r='5'/%3E%3Ccircle cx='65' cy='76' r='5'/%3E%3Ccircle cx='50' cy='80' r='5'/%3E%3Ccircle cx='35' cy='76' r='5'/%3E%3Ccircle cx='24' cy='65' r='5'/%3E%3Ccircle cx='20' cy='50' r='5'/%3E%3Ccircle cx='24' cy='35' r='5'/%3E%3Ccircle cx='35' cy='24' r='5'/%3E%3Ccircle cx='50' cy='20' r='5'/%3E%3Ccircle cx='65' cy='24' r='5'/%3E%3Ccircle cx='76' cy='35' r='5'/%3E%3C/g%3E%3C/svg%3E">
   <style>
     :root {
       --bg: #0a0d0a;
@@ -477,6 +478,40 @@
       100% {
         opacity: 0;
       }
+    }
+
+    /* ── Background thinking orb (main portfolio) ──────────── */
+    .bg-orb-wrap {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      pointer-events: none;
+      opacity: 0.13;
+      transition: opacity 0.6s ease;
+    }
+
+    .bg-orb-wrap.thinking {
+      opacity: 0.38;
+    }
+
+    .bg-orb-label {
+      color: var(--fg);
+      font-size: 0.9em;
+      font-style: italic;
+      letter-spacing: 3px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      text-shadow: 0 0 6px var(--cursor);
+    }
+
+    .bg-orb-wrap.thinking .bg-orb-label {
+      opacity: 0.9;
     }
 
     /* ── Glyph cursor (thinking-orbs morph) ────────────────── */
@@ -1959,6 +1994,63 @@
       const anchor = scope && scope.querySelector ? scope.querySelector('.cursor') : null;
       if (anchor) anchor.replaceWith(glyphCursorEl);
     }
+    // ── Orb: Composing (Ribbon) ────────────────────────────────
+    // Parallel strands of dots ride a great circle with undulating
+    // traveling waves. Ghost field of Fibonacci-distributed dots.
+
+    function drawRibbon(ctx, size, t, dark, o = {}) {
+      const cx = size / 2, cy = size / 2;
+      const R = (size / 2) * 0.78;
+      const spin = o.spin ?? 1;
+      const pt = makeProj(t * 0.1 * spin, 0.3, cx, cy, 1);
+      const rs = radiusScale(size, o.rsPow ?? 0.6);
+
+      const dots = [];
+      // background ghost sphere (Fibonacci)
+      const ghostN = o.ghostN ?? 150;
+      for (let i = 0; i < ghostN; i++) {
+        const d = fibDir(i, ghostN);
+        const [px, py, z] = pt(d[0] * R, d[1] * R, d[2] * R);
+        const depth = (z / R + 1) / 2;
+        dots.push({ x: px, y: py, z, r: 0.8 * rs, white: 0.78, a: 0.1 + 0.22 * depth });
+      }
+
+      // band plane (precesses when spin > 0)
+      const ya = t * 0.24 * spin;
+      const ta = 0.55 + 0.3 * Math.sin(t * 0.18) * spin;
+      const ux = Math.cos(ya), uy = 0, uz = Math.sin(ya);
+      const vx = -uz * Math.sin(ta), vy = Math.cos(ta), vz = ux * Math.sin(ta);
+      const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+
+      const baseLanes = o.lanes ?? 5;
+      const segs = o.segs ?? 88;
+      const lanes = Math.max(1, Math.round(baseLanes * (o.bandMul ?? 1)));
+      for (let w = 0; w < lanes; w++) {
+        const laneOff = (w - (lanes - 1) / 2) * 0.075;
+        const edge = Math.abs(w - (lanes - 1) / 2) / Math.max(1, (lanes - 1) / 2);
+        for (let k = 0; k < segs; k++) {
+          const a = (k / segs) * 2 * Math.PI;
+          const wob = (
+            0.16 * Math.sin(a * 3 - t * 1.7 + w * 0.22) +
+            0.07 * Math.sin(a * 5 + t * 1.1)
+          ) * (o.wobMul ?? 1);
+          const off = laneOff + wob;
+          const x = ux * Math.cos(a) + vx * Math.sin(a) + nx * off;
+          const y = uy * Math.cos(a) + vy * Math.sin(a) + ny * off;
+          const z = uz * Math.cos(a) + vz * Math.sin(a) + nz * off;
+          const l = Math.sqrt(x * x + y * y + z * z);
+          const [px, py, zr] = pt((x / l) * R, (y / l) * R, (z / l) * R);
+          const depth = (zr / R + 1) / 2;
+          dots.push({
+            x: px, y: py, z: zr,
+            r: ((o.rBase ?? 1.1) + (o.rDepth ?? 1.7) * depth) * (1 - 0.25 * edge) * rs,
+            white: 0.52 - 0.44 * depth + 0.18 * edge,
+            a: 0.4 + 0.6 * depth
+          });
+        }
+      }
+      paint(ctx, dots, dark, o.rMin);
+    }
     // ── [3] Phosphor override ───────────────────────────────────
     // Re-themes the orb's dots from grayscale to phosphor
     // (fg-dim → fg-bright). Same function name as the engine's
@@ -2046,6 +2138,71 @@
       stopMusicOrb();
       state.lyricsData = null;
       state.lastLyricIdx = -1;
+    }
+
+    // ════════════════════════════════════════════════════════════
+    //  BACKGROUND THINKING ORB
+    //  The intro's Rubik orb, dimmed and parked behind the
+    //  portfolio as an ambient watermark. Sibling of .terminal —
+    //  fixed while content scrolls, CRT-ified by the overlays.
+    //  bgOrbPulse() brightens it + shows "thinking…" while a
+    //  command executes.
+    // ════════════════════════════════════════════════════════════
+
+    let bgOrbWrap = null;
+    let bgOrbStop = null;
+    let bgOrbPulseTimer = null;
+    let bgOrbResize = null;
+
+    function stopBgOrb() {
+      if (bgOrbPulseTimer) { clearTimeout(bgOrbPulseTimer); bgOrbPulseTimer = null; }
+      if (bgOrbStop) { bgOrbStop(); bgOrbStop = null; }
+      if (bgOrbResize) { window.removeEventListener('resize', bgOrbResize); bgOrbResize = null; }
+      if (bgOrbWrap && bgOrbWrap.isConnected) bgOrbWrap.remove();
+      bgOrbWrap = null;
+    }
+
+    function startBgOrb() {
+      stopBgOrb();
+      const wrap = document.createElement('div');
+      wrap.className = 'bg-orb-wrap';
+      wrap.innerHTML = '<canvas></canvas><div class="bg-orb-label">thinking…</div>';
+      $screen.appendChild(wrap);
+      const canvas = wrap.querySelector('canvas');
+
+      const size = Math.max(240, Math.min(Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.75), 560));
+      bgOrbStop = startOrb(canvas, {
+        size, dark: true, speed: 1.4,           // slow ambient ribbon tempo
+        drawFn: drawRibbon,
+        opts: { spin: 1, bandMul: 3.9, wobMul: 1, ghostN: 150, segs: 88 }
+      });
+      bgOrbWrap = wrap;
+
+      // reduced motion: one static frame, no loop
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (bgOrbStop) { bgOrbStop(); bgOrbStop = null; }
+        }));
+      }
+
+      // rebuild on significant width change (rotation, window resize)
+      let lastW = window.innerWidth;
+      bgOrbResize = () => {
+        if (Math.abs(window.innerWidth - lastW) < 80) return;
+        lastW = window.innerWidth;
+        startBgOrb();
+      };
+      window.addEventListener('resize', bgOrbResize);
+    }
+
+    // Call when a command starts executing — the machine "thinks."
+    function bgOrbPulse(ms = 1400) {
+      if (!bgOrbWrap) return;
+      bgOrbWrap.classList.add('thinking');
+      if (bgOrbPulseTimer) clearTimeout(bgOrbPulseTimer);
+      bgOrbPulseTimer = setTimeout(() => {
+        if (bgOrbWrap) bgOrbWrap.classList.remove('thinking');
+      }, ms);
     }
     // ════════════════════════════════════════════════════════════
     //  INTRO — "IDENTIFY YOURSELF"
@@ -2181,6 +2338,7 @@
 
         document.body.classList.remove('theme-locked');
         document.body.classList.add('theme-amber');
+        startBgOrb(); // the orb that solved your identity now lives behind the portfolio
         $output.innerHTML = '';
         state.cwd = '~'; state.topic = null; state.input = ''; state.phase = 'unlocking';
         const tb = document.querySelector('.titlebar-title');
@@ -2656,6 +2814,7 @@
     }
     function cmdExit() {
       stopMusicPlayer();
+      stopBgOrb();
       print('<span class="text-dim">logout</span>');
       setTimeout(() => {
         print(''); print('<span class="text-dim">Connection to portfolio closed.</span>');
@@ -3143,14 +3302,24 @@
       if (state.ghostText) { state.input += state.ghostText; state.ghostText = ''; }
       const cmd = state.input.trim();
       if (state.phase === 'lock') { await executeLockCommand(cmd); return; }
-      print(`<span class="prompt-user">vishwa</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$</span> ${escapeHtml(cmd)}`);
+      print(`<span class="prompt-user">${escapeHtml(state.visitorName || 'vishwa')}</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$</span> ${escapeHtml(cmd)}`);
       state.input = '';
       if (cmd) {
         state.history.push(cmd); state.historyIdx = state.history.length;
         const chain = cmd.split('&&').map(s => s.trim()).filter(Boolean);
         for (const sub of chain) {
           const parts = sub.split(/\s+/); const name = parts[0]; const args = parts.slice(1);
-          if (commands[name]) { try { commands[name](args); } catch (e) { print(`<span class="text-error">error: ${escapeHtml(e.message)}</span>`); } }
+          if (commands[name]) {
+            bgOrbPulse(); // the machine thinks
+            try {
+              const result = commands[name](args);
+              // async commands (music) return promises — catch those too,
+              // not just synchronous throws
+              if (result && typeof result.catch === 'function') {
+                result.catch(e => print(`<span class="text-error">error: ${escapeHtml(e.message)}</span>`));
+              }
+            } catch (e) { print(`<span class="text-error">error: ${escapeHtml(e.message)}</span>`); }
+          }
           else { print(`<span class="text-error">command not found: ${escapeHtml(name)}</span>`); print('<span class="text-dim">type \'help\' for available commands</span>'); break; }
         }
       }
