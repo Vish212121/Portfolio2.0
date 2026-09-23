@@ -1048,11 +1048,17 @@
     }
 
     .visualizer {
-      font-size: 1em;
-      letter-spacing: 2px;
-      color: var(--accent);
       margin: 8px 0;
-      text-shadow: 0 0 4px var(--accent);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .visualizer canvas.orb-canvas {
+      display: block;
+      filter: drop-shadow(0 0 6px var(--fg-bright));
+      opacity: 0.95;
     }
 
     .cassette {
@@ -1096,6 +1102,235 @@
 
       50% {
         opacity: 0.8;
+      }
+    }
+
+    /* ── Intro: Identify Yourself ─────────────────────────── */
+    .intro-layer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 28px;
+      bottom: 22px;
+      z-index: 6;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 20px;
+      cursor: text;
+      animation: introFade 1.2s ease-out;
+    }
+
+    @keyframes introFade {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+
+    .intro-brand,
+    .intro-below {
+      transition: opacity 0.5s ease;
+    }
+
+    /* submit: everything except the orb fades away */
+    .intro-layer.intro-hidden .intro-brand,
+    .intro-layer.intro-hidden .intro-below {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .intro-brand {
+      color: var(--fg-dim);
+      font-size: 0.85em;
+      letter-spacing: 3px;
+    }
+
+    .intro-layer .orb-canvas {
+      display: block;
+      filter: drop-shadow(0 0 16px var(--cursor));
+    }
+
+    /* prompt and greeting stack on the same spot —
+       one fades out, the other fades in, zero layout jump */
+    .intro-stage {
+      display: grid;
+      place-items: center;
+      min-height: 6em;
+    }
+
+    .intro-below,
+    .intro-greet {
+      grid-area: 1 / 1;
+    }
+
+    .intro-below {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .intro-prompt {
+      color: var(--fg-bright);
+      font-size: 1.25em;
+      letter-spacing: 1px;
+      min-height: 1.6em;
+      text-shadow: 0 0 6px var(--cursor);
+      text-align: center;
+    }
+
+    .intro-prompt .intro-name {
+      font-weight: 500;
+      color: var(--fg-bright);
+    }
+
+    .intro-btn {
+      background: transparent;
+      border: 1px solid var(--fg-dim);
+      color: var(--fg-dim);
+      font-family: inherit;
+      font-size: 0.85em;
+      padding: 4px 16px;
+      cursor: pointer;
+      border-radius: 2px;
+      letter-spacing: 1px;
+      transition: all 0.15s;
+    }
+
+    .intro-btn:hover:not(:disabled) {
+      border-color: var(--fg-bright);
+      color: var(--fg-bright);
+    }
+
+    .intro-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    /* the greeting — fades in slowly beneath the orb */
+    .intro-greet {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 1.4s ease;
+    }
+
+    .intro-greet.reveal {
+      opacity: 1;
+    }
+
+    .intro-greet-name {
+      color: var(--fg-bright);
+      font-size: 1.7em;
+      font-weight: 500;
+      letter-spacing: 1px;
+      text-shadow: 0 0 10px var(--cursor);
+    }
+
+    .intro-greet-sub {
+      color: var(--fg-dim);
+      font-size: 0.95em;
+      font-style: italic;
+      letter-spacing: 1px;
+      opacity: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    .intro-greet-sub.reveal {
+      opacity: 0.9;
+    }
+
+    /* ── CRT power-cycle (intro → portfolio handoff) ──────── */
+    @keyframes crtOff {
+      0% {
+        transform: scale(1, 1);
+        filter: brightness(1);
+      }
+
+      55% {
+        transform: scale(1, 0.006);
+        filter: brightness(3.2);
+      }
+
+      75% {
+        transform: scale(0.4, 0.004);
+        filter: brightness(4);
+      }
+
+      100% {
+        transform: scale(0, 0.002);
+        filter: brightness(0);
+      }
+    }
+
+    @keyframes crtOn {
+      0% {
+        transform: scale(0, 0.002);
+        filter: brightness(0);
+      }
+
+      30% {
+        transform: scale(1, 0.005);
+        filter: brightness(3.5);
+      }
+
+      60% {
+        transform: scale(1, 1.02);
+        filter: brightness(1.8);
+      }
+
+      100% {
+        transform: scale(1, 1);
+        filter: brightness(1);
+      }
+    }
+
+    .screen.crt-off {
+      animation: crtOff 0.5s ease-in forwards;
+    }
+
+    .screen.crt-on {
+      animation: crtOn 0.9s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+    }
+
+    @media (max-width: 768px) {
+      .intro-layer {
+        top: 24px;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .intro-prompt {
+        font-size: 1.05em;
+      }
+
+      .intro-greet-name {
+        font-size: 1.35em;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .intro-layer,
+      .screen.crt-off,
+      .screen.crt-on {
+        animation: none;
+      }
+
+      .intro-brand,
+      .intro-below,
+      .intro-greet,
+      .intro-greet-sub {
+        transition: none;
       }
     }
 
@@ -1338,9 +1573,9 @@
     const state = {
       phase: 'lock', input: '', history: [], historyIdx: -1,
       cwd: '~/portfolio', topic: null, scanlinesOn: true, sound: false,
-      theme: 'amber', ghostText: '', accessCode: '6137', attempts: 0, maxAttempts: 8,
+      theme: 'amber', ghostText: '', visitorName: '',
       musicPoll: null, musicTick: null, musicEq: null, musicCassette: null, lyricsData: null, lastLyricIdx: -1,
-      musicIdleTimer: null
+      musicIdleTimer: null, musicOrbStop: null, musicOrbGuard: null, musicOrbKey: null
     };
 
     const $output = document.getElementById('output');
@@ -1398,7 +1633,492 @@
       osc.connect(gain); gain.connect(ctx.destination);
       osc.start(); osc.stop(ctx.currentTime + 0.15);
     }
+    // ════════════════════════════════════════════════════════════
+    //  THINKING ORBS — engine + Wave orb + phosphor theming
+    //  Source: github.com/RareFormLabs/thinking-orbs
+    //  Sections: [1] shared engine  [2] wave orb
+    //            [3] phosphor override  [4] music lifecycle
+    // ════════════════════════════════════════════════════════════
 
+    // ── [1] Shared engine ───────────────────────────────────────
+
+    /** Deterministic hash in [0, 1). */
+    function hashD(a, b) {
+      const h = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453;
+      return h - Math.floor(h);
+    }
+
+    /** Stable directions on a unit sphere (Fibonacci lattice). */
+    function fibDir(i, n) {
+      const golden = Math.PI * (3 - Math.sqrt(5));
+      const y = 1 - (2 * (i + 0.5)) / n;
+      const rad = Math.sqrt(1 - y * y);
+      const a = i * golden;
+      return [rad * Math.cos(a), y, rad * Math.sin(a)];
+    }
+
+    /** Shortest signed angular distance, wrapped to (-π, π]. */
+    function angleDelta(a, b) {
+      return Math.atan2(Math.sin(a - b), Math.cos(a - b));
+    }
+
+    /** Shared spin + tilt + orthographic projection. */
+    function makeProj(yaw, tilt, cx, cy, scale) {
+      const st = Math.sin(tilt), ct = Math.cos(tilt);
+      const sy = Math.sin(yaw), cyw = Math.cos(yaw);
+      return (x, y, z) => {
+        const x1 = x * cyw + z * sy;
+        const z1 = -x * sy + z * cyw;
+        const y1 = y * ct - z1 * st;
+        const z2 = y * st + z1 * ct;
+        return [cx + x1 * scale, cy - y1 * scale, z2];
+      };
+    }
+
+    /** Z-sort far→near, draw matte grayscale dots. */
+    function paint(ctx, dots, dark, rMin = 0.3) {
+      dots.sort((a, b) => a.z - b.z);
+      for (const d of dots) {
+        const alpha = d.a ?? 1;
+        if (alpha < 0.02) continue;
+        const w = Math.min(1, Math.max(0, d.white));
+        const g = Math.round((dark ? 1 - w : w) * 255);
+        ctx.fillStyle = `rgba(${g},${g},${g},${alpha})`;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, Math.max(rMin, d.r), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    /** Sub-linear radius scaling keeps small spinners legible. */
+    function radiusScale(size, pow = 0.6) {
+      return (size / 300) ** pow;
+    }
+
+    /** Generic animation loop helper. Returns a `stop` function. */
+    function startOrb(canvas, { size = 64, dark = false, speed = 1, drawFn, opts = {} }) {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.round(size * dpr);
+      canvas.height = Math.round(size * dpr);
+      canvas.style.width = size + 'px';
+      canvas.style.height = size + 'px';
+      const ctx = canvas.getContext('2d');
+      let raf = 0, running = false;
+      const loop = () => {
+        const t = (performance.now() / 1000) * speed;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, size, size);
+        drawFn(ctx, size, t, dark, opts);
+        if (running) raf = requestAnimationFrame(loop);
+      };
+      running = true;
+      raf = requestAnimationFrame(loop);
+      return () => { running = false; cancelAnimationFrame(raf); };
+    }
+
+    // ── [2] Orb: Listening (Wave) ───────────────────────────────
+    // A dotted sphere whose rings undulate like a waveform.
+
+    function drawWave(ctx, size, t, dark, o = {}) {
+      const cx = size / 2, cy = size / 2;
+      // 0.874 compensates for the undulation pulling inward
+      const R = (size / 2) * 0.874;
+      const pt = makeProj(t * 0.18, 0.38, cx, cy, 1);
+      const rs = radiusScale(size, o.rsPow ?? 0.6);
+      const dots = [];
+      const rings = o.rings ?? 15;
+      const lonDensity = o.lonDensity ?? 40;
+      for (let ri = 0; ri <= rings; ri++) {
+        const lat = -Math.PI / 2 + (ri / rings) * Math.PI;
+        const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
+        // two waves, different tempi — organic, never quite repeating
+        const w = 0.62 * Math.sin(t * 2.1 - ri * 0.52) + 0.38 * Math.sin(t * 1.27 + ri * 0.83);
+        const rr = R * (0.88 + 0.105 * w);
+        const lonCount = Math.max(1, Math.round(Math.abs(cosLat) * lonDensity));
+        for (let lj = 0; lj < lonCount; lj++) {
+          const lon = (lj / lonCount) * 2 * Math.PI;
+          const [px, py, z] = pt(cosLat * Math.cos(lon) * rr, sinLat * rr, cosLat * Math.sin(lon) * rr);
+          const depth = (z / R + 1) / 2;
+          const crest = Math.max(0, w);
+          dots.push({
+            x: px, y: py, z,
+            r: ((o.rBase ?? 0.6) + (o.rDepth ?? 1.7) * depth) * (1 + 0.4 * crest) * rs,
+            white: 0.66 - 0.56 * depth - 0.1 * crest
+          });
+        }
+      }
+      paint(ctx, dots, dark, o.rMin);
+    }
+    // ── Orb: Solving (Rubik) — stock, time-driven ─────────────
+    // Bands twist in quarter-turns: scrambles, then solves, in a
+    // palindrome loop. Forever. No external state.
+
+    function solveCycle(time, count, slotDur, rest) {
+      const cyc = 2 * count * slotDur + rest;
+      const tc = time % cyc;
+      const amount = new Array(count).fill(0);
+      let active = -1;
+      if (tc < 2 * count * slotDur) {
+        const slot = Math.floor(tc / slotDur);
+        const p = (tc - slot * slotDur) / slotDur;
+        const cl = Math.min(1, p / 0.7);
+        const ep = 1 - (1 - cl) ** 3; // ease-out
+        if (slot < count) {
+          for (let i = 0; i < slot; i++) amount[i] = 1;
+          amount[slot] = ep; active = slot;
+        } else {
+          const u = 2 * count - 1 - slot;
+          for (let i = 0; i < u; i++) amount[i] = 1;
+          amount[u] = 1 - ep; active = u;
+        }
+      }
+      return { amount, active };
+    }
+
+    function makeMoves(count) {
+      const moves = [];
+      for (let i = 0; i < count; i++) {
+        const axis = Math.min(2, Math.floor(hashD(i, 2.3) * 3));
+        const lo = -1.0 + 0.5 * Math.min(3, Math.floor(hashD(i, 5.9) * 4));
+        const dir = hashD(i, 7.7) < 0.5 ? 1 : -1;
+        moves.push({ axis, lo, hi: lo + 0.5, ang: (dir * Math.PI) / 2 });
+      }
+      return moves;
+    }
+
+    function applyMoves(pt3, moves, sc) {
+      let [x, y, z] = pt3;
+      let inActive = false;
+      for (let i = 0; i < moves.length; i++) {
+        if (sc.amount[i] <= 0) continue;
+        const mv = moves[i];
+        const coord = mv.axis === 0 ? x : mv.axis === 1 ? y : z;
+        if (coord < mv.lo || coord >= mv.hi) continue;
+        if (i === sc.active) inActive = true;
+        const a = mv.ang * sc.amount[i];
+        const ca = Math.cos(a), sa = Math.sin(a);
+        if (mv.axis === 0) { const y2 = y * ca - z * sa; z = y * sa + z * ca; y = y2; }
+        else if (mv.axis === 1) { const x2 = x * ca + z * sa; z = -x * sa + z * ca; x = x2; }
+        else { const x2 = x * ca - y * sa; y = x * sa + y * ca; x = x2; }
+      }
+      return [x, y, z, inActive];
+    }
+
+    function drawRubik(ctx, size, t, dark, o = {}) {
+      const cx = size / 2, cy = size / 2;
+      const R = (size / 2) * 0.82;
+      const pt = makeProj(t * 0.55, 0.35 + 0.1 * Math.sin(t * 0.9), cx, cy, R);
+      const rs = radiusScale(size, o.rsPow ?? 0.6);
+      const moveCount = o.moveCount ?? 14;
+      const moves = makeMoves(moveCount);
+      const sc = solveCycle(t, moveCount, 0.42, 1.2);
+
+      const dots = [];
+      const latRings = o.latRings ?? 15;
+      const lonDensity = o.lonDensity ?? 40;
+      for (let li = 0; li <= latRings; li++) {
+        const lat = -Math.PI / 2 + (li / latRings) * Math.PI;
+        const cosLat = Math.cos(lat), sinLat = Math.sin(lat);
+        const lonCount = Math.max(1, Math.round(Math.abs(cosLat) * lonDensity));
+        for (let lj = 0; lj < lonCount; lj++) {
+          const lon = (lj / lonCount) * 2 * Math.PI;
+          const [x, y, z, inActive] = applyMoves(
+            [cosLat * Math.cos(lon), sinLat, cosLat * Math.sin(lon)], moves, sc
+          );
+          const [px, py, zr] = pt(x, y, z);
+          const depth = (zr + 1) / 2;
+          dots.push({
+            x: px, y: py, z: zr,
+            r: ((o.rBase ?? 0.6) + (o.rDepth ?? 1.7) * depth + (inActive ? (o.rActive ?? 0.3) : 0)) * rs,
+            white: (o.inkFar ?? 0.62) - (o.inkSpan ?? 0.54) * depth - (inActive ? 0.14 : 0)
+          });
+        }
+      }
+      paint(ctx, dots, dark, o.rMin);
+    }
+    // ── [3] Phosphor override ───────────────────────────────────
+    // Re-themes the orb's dots from grayscale to phosphor
+    // (fg-dim → fg-bright). Same function name as the engine's
+    // paint() — this later declaration wins. Palette refreshes
+    // automatically whenever the body theme class changes
+    // (i.e. the `theme` command), so the orb follows
+    // amber/green/cyan live.
+
+    function hexToRgb(hex) {
+      hex = String(hex).trim().replace('#', '');
+      if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+      const n = parseInt(hex, 16);
+      if (isNaN(n)) return [138, 117, 72];
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+
+    const _orbPalette = { dim: [138, 117, 72], bright: [255, 217, 122] };
+    let _orbThemeClass = '';
+
+    function paint(ctx, dots, dark, rMin = 0.3) {
+      const cls = document.body.className;
+      if (cls !== _orbThemeClass) {
+        _orbThemeClass = cls;
+        try {
+          const cs = getComputedStyle(document.body);
+          _orbPalette.dim = hexToRgb(cs.getPropertyValue('--fg-dim'));
+          _orbPalette.bright = hexToRgb(cs.getPropertyValue('--fg-bright'));
+        } catch (e) { /* keep last good palette */ }
+      }
+      dots.sort((a, b) => a.z - b.z);
+      const [dr, dg, db] = _orbPalette.dim;
+      const [br, bg, bb] = _orbPalette.bright;
+      for (const d of dots) {
+        const alpha = d.a ?? 1;
+        if (alpha < 0.02) continue;
+        let w = Math.min(1, Math.max(0, d.white));
+        if (dark) w = 1 - w;
+        ctx.fillStyle = `rgba(${Math.round(dr + (br - dr) * w)},${Math.round(dg + (bg - dg) * w)},${Math.round(db + (bb - db) * w)},${alpha})`;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, Math.max(rMin, d.r), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // ── [4] Music orb lifecycle ─────────────────────────────────
+
+    function stopMusicOrb() {
+      if (state.musicOrbStop) { state.musicOrbStop(); state.musicOrbStop = null; }
+      if (state.musicOrbGuard) { clearInterval(state.musicOrbGuard); state.musicOrbGuard = null; }
+      state.musicOrbKey = null;
+    }
+
+    function startMusicOrb(hostEl, speed = 3.2, opts = {}) {
+      stopMusicOrb();
+      const canvas = document.createElement('canvas');
+      canvas.className = 'orb-canvas';
+      hostEl.textContent = '';
+      hostEl.appendChild(canvas);
+      const size = window.innerWidth < 480 ? 72 : 96;
+      const stop = startOrb(canvas, {
+        size, dark: true, speed,
+        drawFn: drawWave,
+        opts: Object.assign({ rings: 10, lonDensity: 26 }, opts)
+      });
+      state.musicOrbStop = stop;
+      // safety net: kill the rAF loop if the canvas ever leaves the DOM
+      state.musicOrbGuard = setInterval(() => {
+        if (!canvas.isConnected) stopMusicOrb();
+      }, 1000);
+      // accessibility: reduced-motion users get a single static frame
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        requestAnimationFrame(() => requestAnimationFrame(stop));
+      }
+    }
+
+    // Full teardown of the music player — called by cmdMusic on
+    // restart, and by cmdClear/cmdExit. clearInterval(null) is a
+    // safe no-op, so this can never throw.
+    function stopMusicPlayer() {
+      if (state.musicPoll) { clearInterval(state.musicPoll); state.musicPoll = null; }
+      if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
+      if (state.musicEq) { clearInterval(state.musicEq); state.musicEq = null; }
+      if (state.musicCassette) { clearInterval(state.musicCassette); state.musicCassette = null; }
+      if (state.musicIdleTimer) { clearTimeout(state.musicIdleTimer); state.musicIdleTimer = null; }
+      stopMusicOrb();
+      state.lyricsData = null;
+      state.lastLyricIdx = -1;
+    }
+    // ════════════════════════════════════════════════════════════
+    //  INTRO — "IDENTIFY YOURSELF"
+    //  A perpetually self-scrambling, self-solving Rubik orb.
+    //  The visitor types their name, everything but the orb fades
+    //  away, "hi, {name}" slowly fades in, then a CRT power-cycle
+    //  hands over to the portfolio. No persistence — every visit
+    //  starts fresh. Auto-enters as guest after 12s of inactivity.
+    // ════════════════════════════════════════════════════════════
+
+    const INTRO_NAME_MAX = 20;
+    const INTRO_AUTO_ENTER_MS = 12000;
+    const introReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let introStopOrb = null;
+    let introLayer = null;
+    let introName = '';
+    let introSubmitted = false;
+    let introAutoTimer = null;
+    let introKeyHandler = null;
+    let introInputHandler = null;
+
+    function introCleanup() {
+      if (introAutoTimer) { clearTimeout(introAutoTimer); introAutoTimer = null; }
+      if (introKeyHandler) { window.removeEventListener('keydown', introKeyHandler, true); introKeyHandler = null; }
+      if (introInputHandler) { $hiddenInput.removeEventListener('input', introInputHandler); introInputHandler = null; }
+      if (introStopOrb) { introStopOrb(); introStopOrb = null; }
+    }
+
+    async function introSequence() {
+      const wrap = document.createElement('div');
+      wrap.className = 'intro-layer';
+      wrap.id = 'intro-layer';
+      wrap.innerHTML = `
+        <div class="intro-brand">vishwa pawar · ai &amp; software engineer</div>
+        <canvas class="orb-canvas" id="intro-canvas"></canvas>
+        <div class="intro-stage">
+          <div class="intro-below">
+            <div class="intro-prompt" id="intro-prompt"></div>
+            <button class="intro-btn" id="intro-btn">▸ identify</button>
+          </div>
+          <div class="intro-greet" id="intro-greet">
+            <div class="intro-greet-name" id="intro-greet-name"></div>
+            <div class="intro-greet-sub" id="intro-greet-sub">welcome to my portfolio</div>
+          </div>
+        </div>`;
+      $screen.appendChild(wrap);
+      introLayer = wrap;
+
+      const promptEl = wrap.querySelector('#intro-prompt');
+      const btnEl = wrap.querySelector('#intro-btn');
+      const greetEl = wrap.querySelector('#intro-greet');
+      const greetNameEl = wrap.querySelector('#intro-greet-name');
+      const greetSubEl = wrap.querySelector('#intro-greet-sub');
+      const canvas = wrap.querySelector('#intro-canvas');
+
+      $statusMode.textContent = 'IDENTIFY';
+      $statusHelp.textContent = 'awaiting identity';
+
+      function renderPrompt() {
+        promptEl.innerHTML = `identify yourself: <span class="intro-name">${escapeHtml(introName)}</span><span class="cursor"></span>`;
+      }
+      renderPrompt();
+
+      // ── the orb: perpetual scramble/solve, fully time-driven ──
+      const orbSize = Math.max(180, Math.min(320, Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.5)));
+      introStopOrb = startOrb(canvas, {
+        size: orbSize, dark: true, speed: 1.6,
+        drawFn: drawRubik,
+        opts: { latRings: 15, lonDensity: 40, moveCount: 14 }
+      });
+      if (introReduced) {
+        // one static solved frame, no loop
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          if (introStopOrb) { introStopOrb(); introStopOrb = null; }
+        }));
+      }
+
+      // ── input actions ──
+      function introType(ch) {
+        if (introSubmitted || introName.length >= INTRO_NAME_MAX) return;
+        introName += ch;
+        renderPrompt();
+        introScheduleAutoEnter();
+      }
+
+      function introBackspace() {
+        if (introSubmitted || !introName.length) return;
+        introName = introName.slice(0, -1);
+        renderPrompt();
+        introScheduleAutoEnter();
+      }
+
+      function introScheduleAutoEnter() {
+        if (introAutoTimer) clearTimeout(introAutoTimer);
+        introAutoTimer = setTimeout(() => { if (!introSubmitted) introSubmit(); }, INTRO_AUTO_ENTER_MS);
+      }
+
+      async function introSubmit() {
+        if (introSubmitted) return;
+        introSubmitted = true;
+        if (introAutoTimer) { clearTimeout(introAutoTimer); introAutoTimer = null; }
+
+        let name = introName.replace(/\s+/g, ' ').trim().slice(0, INTRO_NAME_MAX);
+        if (!name) name = 'guest';
+        state.visitorName = name;
+
+        $statusHelp.textContent = 'identity verified';
+        btnEl.disabled = true;
+
+        // 1 — everything except the orb fades away
+        wrap.classList.add('intro-hidden');
+        await sleep(introReduced ? 250 : 650);
+
+        // 2 — "hi, {name}" fades in slowly beneath the orb
+        greetNameEl.textContent = `hi, ${name}`;
+        greetEl.classList.add('reveal');
+        await sleep(introReduced ? 300 : 1500);
+
+        // 3 — then the sub-line
+        greetSubEl.classList.add('reveal');
+        await sleep(introReduced ? 400 : 1600);
+
+        // 4 — CRT power off
+        if (!introReduced) { $screen.classList.add('crt-off'); await sleep(520); }
+
+        // 5 — teardown + hand over to the portfolio
+        introCleanup();
+        introLayer.remove(); introLayer = null;
+
+        document.body.classList.remove('theme-locked');
+        document.body.classList.add('theme-amber');
+        $output.innerHTML = '';
+        state.cwd = '~'; state.topic = null; state.input = ''; state.phase = 'unlocking';
+        const tb = document.querySelector('.titlebar-title');
+        if (tb) tb.textContent = `${name}@vishwa: ~/portfolio — tty1`;
+        updatePrompt();
+
+        // 6 — CRT power on into amber
+        if (!introReduced) {
+          $screen.classList.remove('crt-off');
+          $screen.classList.add('crt-on');
+          await sleep(880);
+          $screen.classList.remove('crt-on');
+          $screen.style.animation = 'none'; void $screen.offsetWidth; $screen.style.animation = '';
+          await sleep(300);
+        }
+
+        await bootSequence();
+
+        print('');
+        print(`<span class="text-success">session initialized for </span><span class="text-bright">${escapeHtml(name)}</span><span class="text-success"> — type 'help' to explore.</span>`);
+        state.phase = 'main';
+        updatePrompt();
+      }
+
+      // ── keyboard capture (runs before the terminal's handler) ──
+      introKeyHandler = function (e) {
+        if (!introLayer || !introLayer.isConnected) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) { e.stopPropagation(); return; } // keep browser shortcuts
+        if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); introSubmit(); return; }
+        if (e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); introBackspace(); return; }
+        if (e.key.length === 1) {
+          e.preventDefault(); e.stopPropagation();
+          if (e.key >= ' ') introType(e.key);
+          return;
+        }
+        e.stopPropagation(); // arrows/F-keys: swallowed for terminal, not for browser
+      };
+      window.addEventListener('keydown', introKeyHandler, true);
+
+      // ── mobile virtual keyboards (input events, not keydown) ──
+      introInputHandler = function (e) {
+        if (!introLayer || !introLayer.isConnected) return;
+        const it = e.inputType || '';
+        if (e.data && e.data.includes('\n')) { introSubmit(); }
+        else if ((it === 'insertText' || it === 'insertCompositionText') && e.data) {
+          for (const ch of e.data) introType(ch);
+        } else if (it === 'deleteContentBackward' || it === 'deleteContent') {
+          introBackspace();
+        } else if ($hiddenInput.value) {
+          for (const ch of $hiddenInput.value) introType(ch);
+        }
+        $hiddenInput.value = '';
+      };
+      $hiddenInput.addEventListener('input', introInputHandler);
+
+      // tap anywhere = focus (opens keyboard on mobile)
+      wrap.addEventListener('click', () => $hiddenInput.focus());
+      btnEl.addEventListener('click', (e) => { e.stopPropagation(); introSubmit(); });
+      $hiddenInput.value = '';
+      $hiddenInput.focus();
+
+      // nobody gets trapped: auto-enter starts now, resets on each keystroke
+      introScheduleAutoEnter();
+    }
     function renderInput() { $inputText.textContent = state.input; $ghostText.textContent = state.ghostText; }
     function updatePrompt() {
       if (state.phase === 'lock' || state.phase === 'unlocking') {
@@ -1407,7 +2127,7 @@
         $statusCwd.textContent = '~/portfolio'; $statusMode.textContent = 'GUEST'; $statusHelp.textContent = 'access required';
       } else {
         $promptPrefix.style.display = 'inline'; $promptPrefix.style.width = 'auto';
-        $promptPrefix.innerHTML = `<span class="prompt-user">vishwa</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$ </span>`;
+        $promptPrefix.innerHTML = `<span class="prompt-user">${escapeHtml(state.visitorName || 'vishwa')}</span><span class="prompt-sep">@</span><span class="prompt-host">portfolio</span><span class="prompt-sep">:</span><span class="prompt-path">${escapeHtml(state.cwd)}</span><span class="prompt-sep">$ </span>`;
         $statusCwd.textContent = state.cwd; $statusMode.textContent = 'INSERT'; $statusHelp.textContent = "type 'help' for commands";
       }
     }
@@ -1432,53 +2152,12 @@
       return [];
     }
 
-    function checkMastermind(guess, code) {
-      let result = ['×', '×', '×', '×']; let codeChars = code.split(''); let guessChars = guess.split('');
-      for (let i = 0; i < 4; i++) {
-        if (guessChars[i] === codeChars[i]) { result[i] = '●'; codeChars[i] = null; guessChars[i] = null; }
-      }
-      for (let i = 0; i < 4; i++) {
-        if (guessChars[i] !== null) {
-          let idx = codeChars.indexOf(guessChars[i]);
-          if (idx !== -1) { result[i] = '○'; codeChars[idx] = null; }
-        }
-      }
-      return result.join(' ');
-    }
+
 
     async function executeLockCommand(cmd) {
-      print(`<span class="prompt-guest">┌──(guest@vishwa)-[~/portfolio]</span><br><span class="prompt-guest">└─$</span> ${escapeHtml(cmd)}`);
-      state.input = ''; renderInput();
-      const parts = cmd.split(/\s+/); const name = parts[0].toLowerCase(); const args = parts.slice(1);
-
-      if (name === 'crack') {
-        if (!args[0] || !/^\d{4}$/.test(args[0])) { print('<span class="text-error">Usage: crack <4-digits></span>'); return; }
-        state.attempts++; const guess = args[0]; const result = checkMastermind(guess, state.accessCode);
-        printRaw(`<div class="guess-line">${guess.split('').join(' ')}</div>`);
-        printRaw(`<div class="result-line">${result}</div>`);
-        print(''); print(`<span class="text-dim">Attempts: ${state.attempts} / ${state.maxAttempts}</span>`);
-        if (guess === state.accessCode) { await unlockSequence(); }
-        else if (state.attempts >= state.maxAttempts) {
-          print('<span class="text-error">SYSTEM LOCKED. Too many attempts. Rebooting...</span>');
-          await sleep(1000); state.attempts = 0; $output.innerHTML = ''; await lockSequence();
-        }
-      } else if (name === 'help' || name === 'skip' || name === 'hint') {
-        print('<span class="text-dim">> Brute force the 4-digit key using Mastermind rules.</span>');
-        print('<span class="text-dim">> ● = correct digit, correct position.</span>');
-        print('<span class="text-dim">> ○ = correct digit, wrong position.</span>');
-        print('<span class="text-dim">> × = digit not in code.</span>');
-        print('<span class="text-dim">> Type \'sudo bypass\' if you are a busy recruiter.</span>');
-      } else if (name === 'sudo' && args[0] === 'bypass') { await unlockSequence(); }
-      else if (name === 'clear') { $output.innerHTML = ''; }
-      else if (name === 'ls') { print('README.txt  welcome.sh  .config/'); }
-      else if (name === 'cat') {
-        if (args[0] === 'README.txt') print('Nothing here is what it seems. Find the key.');
-        else if (args[0] === 'welcome.sh') print('cat: welcome.sh: Permission denied');
-        else print(`cat: ${escapeHtml(args[0] || '')}: No such file or directory`);
-      } else if (name === 'whoami') { print('guest'); }
-      else if (name === 'pwd') { print('/home/guest/portfolio'); }
-      else if (cmd.trim() === '') { /* do nothing */ }
-      else { print(`<span class="text-error">command not found: ${escapeHtml(name)}</span>`); }
+      // Lock-phase commands removed — the "identify yourself" intro owns all
+      // input until the portfolio boots. Kept as a no-op stub so any residual
+      // routing to it (from the keydown handler) is harmless.
     }
 
     async function unlockSequence() {
@@ -1765,7 +2444,7 @@
       });
     }
 
-    function cmdClear() { $output.innerHTML = ''; }
+    function cmdClear() { stopMusicPlayer(); $output.innerHTML = ''; }
     function cmdHistory() {
       if (state.history.length === 0) { print('<span class="text-dim">(no history yet)</span>'); return; }
       state.history.forEach((cmd, i) => print(`<span class="text-dim">${String(i + 1).padStart(4, ' ')}</span>  ${escapeHtml(cmd)}`));
@@ -1850,6 +2529,7 @@
       }
     }
     function cmdExit() {
+      stopMusicPlayer();
       print('<span class="text-dim">logout</span>');
       setTimeout(() => {
         print(''); print('<span class="text-dim">Connection to portfolio closed.</span>');
@@ -1862,18 +2542,11 @@
       else print(`<span class="text-error">No manual entry for ${escapeHtml(args[0])}</span>`);
     }
 
-    // ----- Spotify Music Command (with precise sync logic) -----
+    // ----- Spotify Music Command (phosphor orb edition) -----
 
     async function cmdMusic() {
-      if (state.musicPoll) clearInterval(state.musicPoll);
-      if (state.musicTick) clearInterval(state.musicTick);
-      if (state.musicEq) clearInterval(state.musicEq);
-      if (state.musicCassette) clearInterval(state.musicCassette);
-      if (state.musicIdleTimer) clearTimeout(state.musicIdleTimer);
-      state.musicPoll = state.musicTick = state.musicEq = state.musicCassette = null;
-      state.musicIdleTimer = null;
-      state.lyricsData = null;
-      state.lastLyricIdx = -1;
+      // Full teardown of any previous player instance
+      stopMusicPlayer();
 
       const musicId = `music-${Date.now()}`;
       let currentTrack = null;
@@ -1894,7 +2567,6 @@
       // than a loading bar.
       const progressBar = (rawPct) => {
         const totalBlocks = 16;
-        // Clamp so a stray >1 (Spotify drift, seeking) never produces a bad index
         const pct = Math.max(0, Math.min(1, Number.isFinite(rawPct) ? rawPct : 0));
         const pos = Math.round(pct * (totalBlocks - 1));
         let bar = '';
@@ -1907,11 +2579,9 @@
       };
 
       // Deterministic per-track "feel" - NOT real Spotify audio data. Spotify locked
-      // audio-features/audio-analysis (real energy/tempo) behind extended-quota access
-      // in Nov 2024 and isn't granting that to new individual-dev apps, so this isn't
-      // available to us. Instead we hash the track+artist into a stable seed so each
-      // song consistently gets its own simulated energy/pulse-speed instead of every
-      // song looking like identical random noise.
+      // audio-features/audio-analysis behind extended-quota access in Nov 2024, so we
+      // hash track+artist into a stable seed: each song consistently gets its own
+      // simulated energy/pulse-speed (and now, its own orb).
       function seededRng(seedStr) {
         let h = 1779033703 ^ seedStr.length;
         for (let i = 0; i < seedStr.length; i++) {
@@ -1928,7 +2598,7 @@
 
       function getTrackProfile(track, artist) {
         const rng = seededRng(`${track}::${artist}`);
-        const energy = 0.35 + rng() * 0.6; // 0.35 - 0.95, biases how "tall" the EQ runs
+        const energy = 0.35 + rng() * 0.6; // 0.35 - 0.95
         const simulatedBpm = 78 + Math.floor(rng() * 90); // 78 - 168, purely simulated
         const pulseMs = Math.max(90, Math.min(320, Math.round(30000 / simulatedBpm)));
         return { energy, pulseMs };
@@ -1954,7 +2624,7 @@
         return parsed.length > 0 ? parsed : null;
       }
 
-      // Karaoke Renderer
+      // Karaoke Renderer (targets the inner lyrics div — never the orb host)
       function renderLyrics(currentMs) {
         if (!state.lyricsData) return;
         const sec = currentMs / 1000;
@@ -1988,13 +2658,20 @@
         }
       }
 
-      // Draw initial scaffold (Two Column Layout)
+      // Draw initial scaffold (Two Column Layout).
+      // CHANGED vs. old version: text-EQ line is gone from the info pane; the orb
+      // now lives at the top of the lyrics pane. `${musicId}-lyrics` moved to an
+      // INNER div so renderLyrics() can overwrite it without ever touching the
+      // orb canvas.
       printRaw(`
 <div class="music-player md" id="${musicId}">
-  <div class="lyrics-pane" id="${musicId}-lyrics">
-    <div class="lyric-prev">♪ ♫ ♪</div>
-    <div class="lyric-curr">Fetching lyrics...</div>
-    <div class="lyric-next">♪ ♫ ♪</div>
+  <div class="lyrics-pane">
+    <div class="visualizer" id="${musicId}-orb"></div>
+    <div id="${musicId}-lyrics">
+      <div class="lyric-prev">♪ ♫ ♪</div>
+      <div class="lyric-curr">Fetching lyrics...</div>
+      <div class="lyric-next">♪ ♫ ♪</div>
+    </div>
   </div>
   <div class="info-pane">
     <pre class="cassette" id="${musicId}-cassette">  ╔═════════════╗
@@ -2010,12 +2687,52 @@
       <button class="composer-btn" id="${musicId}-play-btn">▶ Play</button>
       <button class="composer-btn secondary" id="${musicId}-pause-btn">⏸ Pause</button>
     </div>
-    <p class="visualizer" id="${musicId}-eq">▁▁▁▁▁▁▁▁▁▁▁▁</p>
     <p>Progress: [<span id="${musicId}-bar">················</span>]</p>
     <p><span id="${musicId}-time">0:00 / 0:00</span></p>
     <p class="meta" id="${musicId}-status">► Fetching...</p>
   </div>
 </div>`);
+
+      // --- Orb Visualizer (replaces the old text EQ) ---
+      // Tempo-mapped: the wave's undulation speed is derived from the track's
+      // simulated BPM, dot density from energy. Idempotent — polling every 5s
+      // with unchanged params does NOT restart the canvas (no flicker).
+      const orbHost = document.getElementById(`${musicId}-orb`);
+
+      function orbSpeedFor(p) {
+        const bpm = 30000 / p.pulseMs;      // recover simulated BPM from pulseMs
+        const base = bpm / 26;              // tempo-matched undulation rate
+        return Math.max(1.4, Math.min(5.5, base * (0.8 + 0.4 * p.energy)));
+      }
+
+      function startOrbVisualizer(speed, energy) {
+        const key = `${speed.toFixed(2)}|${energy.toFixed(2)}`;
+        if (state.musicOrbKey === key && state.musicOrbStop) return; // already running
+        state.musicOrbKey = key;
+        startMusicOrb(orbHost, speed, {
+          rings: 8 + Math.round(energy * 6),
+          lonDensity: 20 + Math.round(energy * 14)
+        });
+      }
+
+      function activeOrb() {
+        orbHost.style.opacity = '1';
+        startOrbVisualizer(orbSpeedFor(trackProfile), trackProfile.energy);
+      }
+
+      function calmOrb() {
+        startOrbVisualizer(0.85, 0.35);
+        orbHost.style.opacity = '0.55';
+      }
+
+      function stopOrbVisualizer() {
+        stopMusicOrb();
+        orbHost.style.opacity = '1';
+      }
+
+      // Gentle "connecting" orb while the first API call is in flight
+      startOrbVisualizer(1.1, 0.4);
+      orbHost.style.opacity = '0.8';
 
       // --- Helper: Lyrics ---
       async function fetchLyrics(track, artist, lyricsId) {
@@ -2056,30 +2773,6 @@
         }
       }
 
-      // --- Helper: Visualizer ---
-      function startVisualizer(eqId, energy, pulseMs) {
-        const bars = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
-        if (state.musicEq) clearInterval(state.musicEq);
-        state.musicEq = setInterval(() => {
-          let eq = '';
-          for (let i = 0; i < 12; i++) {
-            // Skew toward taller bars as energy rises, instead of a flat random range
-            const r = Math.random() * energy + Math.random() * (1 - energy) * 0.3;
-            const idx = Math.min(bars.length - 1, Math.floor(r * bars.length));
-            eq += bars[idx];
-          }
-          const el = document.getElementById(eqId);
-          if (el) el.textContent = eq;
-          else clearInterval(state.musicEq);
-        }, pulseMs);
-      }
-      function stopVisualizer(eqId) {
-        if (state.musicEq) clearInterval(state.musicEq);
-        state.musicEq = null;
-        const el = document.getElementById(eqId);
-        if (el) el.textContent = '▁▁▁▁▁▁▁▁▁▁▁▁';
-      }
-
       // --- Helper: Spinning Cassette ---
       function startCassette(casId, pulseMs) {
         const reels = ['◉', '◎', '○', '◎'];
@@ -2095,7 +2788,7 @@
 └─╝║   ${r}     ${r}   ║╝─┘
   ╚═════════════╝`;
           idx++;
-        }, Math.round(pulseMs * 1.6)); // reels turn slower than the EQ pulses, stays readable
+        }, Math.round(pulseMs * 1.6)); // reels turn slower than the orb pulses, stays readable
       }
       function stopCassette(casId) {
         if (state.musicCassette) clearInterval(state.musicCassette);
@@ -2120,6 +2813,7 @@
         if (!el) return;
         const infoPane = el.querySelector('.info-pane');
         if (infoPane) infoPane.style.opacity = active ? '0.45' : '1';
+        if (active) { stopOrbVisualizer(); orbHost.style.opacity = '0.35'; } // freeze the orb while asleep
       }
       function scheduleIdle() {
         if (state.musicIdleTimer || isIdle) return;
@@ -2157,12 +2851,7 @@
           const data = await res.json();
 
           const el = document.getElementById(musicId);
-          if (!el) {
-            clearInterval(state.musicPoll); clearInterval(state.musicTick);
-            clearInterval(state.musicEq); clearInterval(state.musicCassette);
-            state.musicPoll = state.musicTick = state.musicEq = state.musicCassette = null;
-            return;
-          }
+          if (!el) { stopMusicPlayer(); return; }
 
           const hasTrack = Boolean(data.track);
 
@@ -2190,14 +2879,13 @@
             document.getElementById(`${musicId}-time`).textContent = `${fmtTime(data.progress_ms)} / ${fmtTime(data.duration_ms)}`;
             setStatus(`► Currently playing ${data.device ? 'on ' + data.device : ''}`);
 
-            startVisualizer(`${musicId}-eq`, trackProfile.energy, trackProfile.pulseMs);
+            activeOrb(); // tempo-matched orb (idempotent — no restart unless the track changed)
             startCassette(`${musicId}-cassette`, trackProfile.pulseMs);
             renderLyrics(data.progress_ms);
 
             // Always re-anchor the ticker to the server's authoritative position on every poll.
-            // This is what actually fixes desync on skip/seek: instead of trying to detect every
-            // way the track could have changed, we just never let the ticker run stale for more
-            // than one poll interval (5s) against outdated duration/position data.
+            // This fixes desync on skip/seek: the ticker never runs stale for more than one
+            // poll interval (5s) against outdated duration/position data.
             if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
 
             let localMs = data.progress_ms;
@@ -2215,7 +2903,7 @@
             }, 1000);
           } else if (data.progress_ms !== undefined) {
             if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
-            stopVisualizer(`${musicId}-eq`);
+            calmOrb(); // slow breathing orb while paused
             stopCassette(`${musicId}-cassette`);
 
             document.getElementById(`${musicId}-bar`).textContent = progressBar(data.progress_ms / data.duration_ms);
@@ -2225,7 +2913,7 @@
             scheduleIdle();
           } else {
             if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
-            stopVisualizer(`${musicId}-eq`);
+            calmOrb(); // dim, slow orb — nothing playing
             stopCassette(`${musicId}-cassette`);
             setStatus(`► Played ${data.played_ago || 'recently'}`);
             scheduleIdle();
@@ -2468,7 +3156,7 @@
         if ($hiddenInput) $hiddenInput.focus({ preventScroll: true });
       });
       updateClock(); setInterval(updateClock, 1000);
-      lockSequence();
+      introSequence();
     }
 
     init();
