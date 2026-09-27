@@ -2829,7 +2829,7 @@
       else print(`<span class="text-error">No manual entry for ${escapeHtml(args[0])}</span>`);
     }
 
-    // ----- Spotify Music Command (phosphor orb edition) -----
+     // ----- Spotify Music Command (phosphor orb edition) -----
 
     async function cmdMusic() {
       // Full teardown of any previous player instance
@@ -2946,10 +2946,6 @@
       }
 
       // Draw initial scaffold (Two Column Layout).
-      // CHANGED vs. old version: text-EQ line is gone from the info pane; the orb
-      // now lives at the top of the lyrics pane. `${musicId}-lyrics` moved to an
-      // INNER div so renderLyrics() can overwrite it without ever touching the
-      // orb canvas.
       printRaw(`
 <div class="music-player md" id="${musicId}">
   <div class="lyrics-pane">
@@ -2981,9 +2977,6 @@
 </div>`);
 
       // --- Orb Visualizer (replaces the old text EQ) ---
-      // Tempo-mapped: the wave's undulation speed is derived from the track's
-      // simulated BPM, dot density from energy. Idempotent — polling every 5s
-      // with unchanged params does NOT restart the canvas (no flicker).
       const orbHost = document.getElementById(`${musicId}-orb`);
 
       function orbSpeedFor(p) {
@@ -3031,13 +3024,12 @@
 
           const res = await fetch(`/api/lyrics?artist=${encodeURIComponent(cleanArtist)}&track=${encodeURIComponent(cleanTrack)}`);
 
-          // A newer fetchLyrics call has since started (song changed again) - discard this stale result
           if (requestId !== lyricsRequestId) return;
 
           if (!res.ok) throw new Error('API Error');
           const data = await res.json();
 
-          if (requestId !== lyricsRequestId) return; // re-check after the second await
+          if (requestId !== lyricsRequestId) return;
 
           const el = document.getElementById(lyricsId);
 
@@ -3056,7 +3048,7 @@
         } catch (e) {
           if (requestId !== lyricsRequestId) return;
           const el = document.getElementById(lyricsId);
-          if (el) el.innerHTML = `<div class="lyric-curr">Failed to fetch lyrics.</div>`;
+          if (el) el.innerHTML = `<div class="lyric-curr">Lyrics: currently on vacation.</div>`;
         }
       }
 
@@ -3075,7 +3067,7 @@
 └─╝║   ${r}     ${r}   ║╝─┘
   ╚═════════════╝`;
           idx++;
-        }, Math.round(pulseMs * 1.6)); // reels turn slower than the orb pulses, stays readable
+        }, Math.round(pulseMs * 1.6));
       }
       function stopCassette(casId) {
         if (state.musicCassette) clearInterval(state.musicCassette);
@@ -3089,8 +3081,6 @@
       }
 
       // --- Helper: Idle / sleep state ---
-      // If nothing's played for a while, dim the panel instead of leaving it looking
-      // "live" forever on a stalled/paused session.
       function setStatus(text) {
         const statusEl = document.getElementById(`${musicId}-status`);
         if (statusEl) statusEl.textContent = isIdle ? `${text}   z z z` : text;
@@ -3100,7 +3090,7 @@
         if (!el) return;
         const infoPane = el.querySelector('.info-pane');
         if (infoPane) infoPane.style.opacity = active ? '0.45' : '1';
-        if (active) { stopOrbVisualizer(); orbHost.style.opacity = '0.35'; } // freeze the orb while asleep
+        if (active) { stopOrbVisualizer(); orbHost.style.opacity = '0.35'; }
       }
       function scheduleIdle() {
         if (state.musicIdleTimer || isIdle) return;
@@ -3115,19 +3105,43 @@
         if (isIdle) { isIdle = false; applyIdleVisual(false); }
       }
 
-      // --- Play/Pause Controls ---
-      document.getElementById(`${musicId}-play-btn`).addEventListener('click', async () => {
+      // --- Helper: Transport (play/pause) with error surfacing + one retry ---
+      // FIX: the old handlers just did `await fetch(...)` then unconditionally
+      // called fetchAndUpdate() - fetch() does NOT reject on HTTP error statuses,
+      // only on network failure. A 404 "no active device" response (exactly what
+      // happens right after opening Spotify fresh, before it's registered with
+      // Spotify's device-connect backend) was silently swallowed: no error, no
+      // retry, button just looked dead. Now: retry once after a short delay to
+      // absorb that registration lag, then surface a real status message if it
+      // still fails instead of pretending it worked.
+      async function sendTransportCommand(action, isRetry = false) {
         try {
-          await fetch('/api/spotify/play', { method: 'PUT' });
-          fetchAndUpdate(); // Force an immediate sync after clicking
-        } catch (e) { console.error('Play error:', e); }
+          const res = await fetch(`/api/spotify/${action}`, { method: 'PUT' });
+          if (res.ok) {
+            fetchAndUpdate();
+            return;
+          }
+          if (res.status === 404 && !isRetry) {
+            setStatus(`► No active device yet, retrying...`);
+            setTimeout(() => sendTransportCommand(action, true), 1500);
+            return;
+          }
+          setStatus(res.status === 404
+            ? '► No active device — open Spotify, hit play once there, then retry'
+            : `► ${action === 'play' ? 'Play' : 'Pause'} failed (${res.status})`);
+        } catch (e) {
+          console.error(`${action} error:`, e);
+          setStatus(`► ${action === 'play' ? 'Play' : 'Pause'} failed — network error`);
+        }
+      }
+
+      // --- Play/Pause Controls ---
+      document.getElementById(`${musicId}-play-btn`).addEventListener('click', () => {
+        sendTransportCommand('play');
       });
 
-      document.getElementById(`${musicId}-pause-btn`).addEventListener('click', async () => {
-        try {
-          await fetch('/api/spotify/pause', { method: 'PUT' });
-          fetchAndUpdate(); // Force an immediate sync after clicking
-        } catch (e) { console.error('Pause error:', e); }
+      document.getElementById(`${musicId}-pause-btn`).addEventListener('click', () => {
+        sendTransportCommand('pause');
       });
 
       // --- Main Sync Loop ---
@@ -3153,9 +3167,8 @@
 
             fetchLyrics(data.track, data.artist, `${musicId}-lyrics`);
           } else if (!hasTrack && currentTrack !== null) {
-            // Playback stopped entirely / no track info from the API - don't try to fetch lyrics for "undefined"
             currentTrack = null;
-            lyricsRequestId++; // invalidate any in-flight lyrics request
+            lyricsRequestId++;
             state.lyricsData = null;
             state.lastLyricIdx = -1;
           }
@@ -3166,13 +3179,10 @@
             document.getElementById(`${musicId}-time`).textContent = `${fmtTime(data.progress_ms)} / ${fmtTime(data.duration_ms)}`;
             setStatus(`► Currently playing ${data.device ? 'on ' + data.device : ''}`);
 
-            activeOrb(); // tempo-matched orb (idempotent — no restart unless the track changed)
+            activeOrb();
             startCassette(`${musicId}-cassette`, trackProfile.pulseMs);
             renderLyrics(data.progress_ms);
 
-            // Always re-anchor the ticker to the server's authoritative position on every poll.
-            // This fixes desync on skip/seek: the ticker never runs stale for more than one
-            // poll interval (5s) against outdated duration/position data.
             if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
 
             let localMs = data.progress_ms;
@@ -3190,7 +3200,7 @@
             }, 1000);
           } else if (data.progress_ms !== undefined) {
             if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
-            calmOrb(); // slow breathing orb while paused
+            calmOrb();
             stopCassette(`${musicId}-cassette`);
 
             document.getElementById(`${musicId}-bar`).textContent = progressBar(data.progress_ms / data.duration_ms);
@@ -3200,7 +3210,7 @@
             scheduleIdle();
           } else {
             if (state.musicTick) { clearInterval(state.musicTick); state.musicTick = null; }
-            calmOrb(); // dim, slow orb — nothing playing
+            calmOrb();
             stopCassette(`${musicId}-cassette`);
             setStatus(`► Played ${data.played_ago || 'recently'}`);
             scheduleIdle();
@@ -3215,6 +3225,7 @@
       await fetchAndUpdate();
       state.musicPoll = setInterval(fetchAndUpdate, 5000);
     }
+
 
     // ----- Tab completion & Markdown (unchanged) -----
     function getCompletionTargets() {
