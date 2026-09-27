@@ -106,6 +106,10 @@ async function getSpotifyData() {
           track: item.track.name,
           artist: item.track.artists.map(a => a.name).join(', '),
           album: item.track.album.name,
+          // FIX: this was missing before, so any lyrics lookup for a paused/stopped
+          // track had no duration to disambiguate with - only the live "currently
+          // playing" branch above had it.
+          duration_ms: item.track.duration_ms,
           played_ago: minsAgo > 60 ? `${Math.floor(minsAgo / 60)}h ago` : `${minsAgo}m ago`,
         };
       }
@@ -125,50 +129,199 @@ app.get('/api/spotify', async (req, res) => {
   }
 });
 
+// ---- Lyrics lookup ----
+// In-memory cache so repeat requests for the same track don't hit external APIs again
+const lyricsCache = new Map(); // key: "artist|track|duration" -> { synced, plain }
+
+// Strip the noise that commonly breaks exact-match lookups on lrclib/lyrist
+function cleanString(s) {
+  return s
+    // (feat. X) / (with X) / [feat. X] / [with X]
+    .replace(/\s*[([](?:feat|ft|with)\.?[^)\]]*[)\]]/gi, '')
+    // "(From "Movie Name")" / "(from the film X)" - common soundtrack tagging,
+    // especially on Bollywood/OST releases
+    .replace(/\s*\(from\s+[^)]*\)/gi, '')
+    // standalone parenthetical version tags: "(Live)", "(Remastered)", "(Acoustic)" etc.
+    .replace(/\s*\((?:live|remaster(?:ed)?|acoustic|instrumental|demo|mono|stereo|explicit|clean)\)\s*$/gi, '')
+    // trailing " - <anything containing a version/edit keyword>" - the keyword can
+    // appear anywhere after the dash, not just immediately following it, so this
+    // catches both "Song - Remastered 2015" AND "Song - 2015 Remaster"
+    .replace(/\s*-\s*[^-]*\b(remaster(?:ed)?|radio edit|live|mono|stereo|version|mix|bonus track|deluxe|explicit|extended|acoustic|instrumental|demo)\b[^-]*$/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Loose normalization for comparing names ("Beyoncé" ~ "beyonce", ignore punctuation/case)
+function normalizeForCompare(s) {
+  return (s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // strip accents
+    .replace(/[^a-z0-9]/g, '');
+}
+
+// Pick the best candidate from a lrclib /api/search result list, requiring the
+// artist to actually match - the search endpoint ranks by text relevance only,
+// so an unvalidated top hit can be a cover or an unrelated same-titled track.
+//
+// FIX: title is matched FIRST now, duration only breaks ties between entries
+// that already share a title. The old version filtered by duration before
+// checking titles at all - if the correct entry had missing/bad duration data
+// (common on a crowd-sourced DB) while a *different* same-artist track
+// happened to have a similar duration, that wrong track would win, or the
+// real match would get excluded entirely and the lookup would 404 even
+// though the right lyrics were sitting right there in the results.
+function pickBestSearchMatch(results, wantArtist, wantTrack, wantDurationSec) {
+  const nArtist = normalizeForCompare(wantArtist);
+  const nTrack = normalizeForCompare(wantTrack);
+
+  const candidates = results.filter(r => {
+    if (!r.syncedLyrics && !r.plainLyrics) return false;
+    const rArtist = normalizeForCompare(r.artistName);
+    return rArtist === nArtist || rArtist.includes(nArtist) || nArtist.includes(rArtist);
+  });
+  if (candidates.length === 0) return null;
+
+  const exactTitle = candidates.filter(r => normalizeForCompare(r.trackName) === nTrack);
+  const looseTitle = candidates.filter(r => {
+    const rTrack = normalizeForCompare(r.trackName);
+    return rTrack.includes(nTrack) || nTrack.includes(rTrack);
+  });
+
+  // Among entries that already match on title, prefer the one closest to the
+  // known duration (handles "album version" vs "radio edit" style duplicates).
+  // Falls back to the first entry when duration is unknown or missing.
+  const byBestDuration = (pool) => {
+    if (pool.length <= 1) return pool[0] || null;
+    if (!wantDurationSec) return pool[0];
+    return pool.reduce((best, r) => {
+      const bestDiff = typeof best.duration === 'number' ? Math.abs(best.duration - wantDurationSec) : Infinity;
+      const rDiff = typeof r.duration === 'number' ? Math.abs(r.duration - wantDurationSec) : Infinity;
+      return rDiff < bestDiff ? r : best;
+    }, pool[0]);
+  };
+
+  if (exactTitle.length > 0) return byBestDuration(exactTitle);
+  if (looseTitle.length > 0) return byBestDuration(looseTitle);
+  return null;
+}
+
 // Secure route to fetch lyrics (bypasses CORS issues)
 app.get('/api/lyrics', async (req, res) => {
   try {
-    const { artist, track } = req.query;
+    let { artist, track, album } = req.query;
+    let durationMs = req.query.duration_ms ? parseInt(req.query.duration_ms, 10) : null;
     if (!artist || !track) return res.status(400).json({ error: 'Missing params' });
 
-    // 1. Try lrclib.net for synced lyrics
-    const lrcUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}`;
+    artist = cleanString(artist);
+    track = cleanString(track);
+
+    // lrclib's "exact" /api/get endpoint actually does FUZZY text matching under
+    // the hood - with no duration to pin it down, an ambiguous or common title
+    // can silently resolve to the wrong track. If the caller didn't supply
+    // duration/album, pull them from what's actually playing right now, but only
+    // trust that data if it's clearly the same artist/track we were asked about.
+    // (Best fix for this is having the frontend just send duration_ms/album
+    // directly, since it already has them from the /api/spotify poll - see the
+    // note below the code.)
+    if (!durationMs || !album) {
+      try {
+        const spotifyData = await getSpotifyData();
+        if (spotifyData && !spotifyData.error) {
+          const spArtist = normalizeForCompare(spotifyData.artist);
+          const spTrack = normalizeForCompare(spotifyData.track);
+          const wArtist = normalizeForCompare(artist);
+          const wTrack = normalizeForCompare(track);
+          const sameTrack = spArtist && spTrack &&
+            (spArtist.includes(wArtist) || wArtist.includes(spArtist)) &&
+            (spTrack.includes(wTrack) || wTrack.includes(spTrack));
+          if (sameTrack) {
+            if (!durationMs && spotifyData.duration_ms) durationMs = spotifyData.duration_ms;
+            if (!album && spotifyData.album) album = spotifyData.album;
+          }
+        }
+      } catch (e) {
+        console.error('Could not enrich lyrics lookup with Spotify data:', e.message);
+      }
+    }
+
+    album = album ? cleanString(album) : null;
+    const durationSec = durationMs ? Math.round(durationMs / 1000) : null;
+    const cacheKey = `${artist.toLowerCase()}|${track.toLowerCase()}|${durationSec || ''}`;
+
+    if (lyricsCache.has(cacheKey)) {
+      return res.status(200).json(lyricsCache.get(cacheKey));
+    }
+
+    // 1. Try lrclib.net /api/get - best accuracy when duration/album are included
     try {
-      const lrcRes = await fetchWithTimeout(lrcUrl, {}, 5000);
-      if (lrcRes.ok) {
-        const lrcData = await lrcRes.json();
-        // Only return early if we actually got usable lyrics - otherwise fall through
-        if (lrcData && (lrcData.syncedLyrics || lrcData.plainLyrics)) {
-          return res.status(200).json({
-            synced: lrcData.syncedLyrics || null,
-            plain: lrcData.plainLyrics || null,
-          });
+      let getUrl = `https://lrclib.net/api/get?artist_name=${encodeURIComponent(artist)}&track_name=${encodeURIComponent(track)}`;
+      if (album) getUrl += `&album_name=${encodeURIComponent(album)}`;
+      if (durationSec) getUrl += `&duration=${durationSec}`;
+      const getRes = await fetchWithTimeout(getUrl, {}, 5000);
+      if (getRes.ok) {
+        const data = await getRes.json();
+        if (data.syncedLyrics || data.plainLyrics) {
+          const result = { synced: data.syncedLyrics || null, plain: data.plainLyrics || null };
+          lyricsCache.set(cacheKey, result);
+          return res.status(200).json(result);
+        }
+      } else {
+        console.log(`[lyrics] /api/get miss (${getRes.status}) for "${track}" - ${artist}`);
+      }
+    } catch (e) {
+      console.error('lrclib get failed, falling back:', e.message);
+    }
+
+    // 2. Fall back to lrclib.net search using dedicated fields (more accurate than
+    // a combined free-text query per lrclib's own docs), validated against
+    // artist + duration so an irrelevant top-ranked hit can't slip through.
+    try {
+      const searchUrl = `https://lrclib.net/api/search?track_name=${encodeURIComponent(track)}&artist_name=${encodeURIComponent(artist)}`;
+      const searchRes = await fetchWithTimeout(searchUrl, {}, 5000);
+      if (searchRes.ok) {
+        const results = await searchRes.json();
+        if (Array.isArray(results) && results.length > 0) {
+          const best = pickBestSearchMatch(results, artist, track, durationSec);
+          if (best) {
+            const result = { synced: best.syncedLyrics || null, plain: best.plainLyrics || null };
+            lyricsCache.set(cacheKey, result);
+            return res.status(200).json(result);
+          }
+          console.log(`[lyrics] search returned ${results.length} result(s) for "${track}" - ${artist} but none matched artist/title`);
+        } else {
+          console.log(`[lyrics] search returned nothing for "${track}" - ${artist}`);
         }
       }
     } catch (e) {
-      console.error('lrclib fetch failed, falling back:', e.message);
+      console.error('lrclib search failed, falling back:', e.message);
     }
 
-    // 2. Fallback to lyrist.osar.fr (plain only)
+    // 3. Fallback to lyrist.osar.fr (plain only) - last resort, no metadata to
+    // validate against, so it's only reached once the two lrclib checks above
+    // have already failed to find a confident match.
     try {
       const fallbackUrl = `https://lyrist.osar.fr/api/${encodeURIComponent(artist)}/${encodeURIComponent(track)}`;
       const fallbackRes = await fetchWithTimeout(fallbackUrl, {}, 5000);
       if (fallbackRes.ok) {
         const fallbackData = await fallbackRes.json();
         if (fallbackData.lyrics) {
-          return res.status(200).json({ synced: null, plain: fallbackData.lyrics });
+          const result = { synced: null, plain: fallbackData.lyrics };
+          lyricsCache.set(cacheKey, result);
+          return res.status(200).json(result);
         }
       }
     } catch (e) {
       console.error('lyrist fallback failed:', e.message);
     }
 
+    console.log(`[lyrics] no source had "${track}" - ${artist} (duration: ${durationSec ?? 'unknown'}s) - likely a real coverage gap`);
     res.status(404).json({ error: 'Lyrics not found' });
   } catch (e) {
     console.error('Lyrics fetch error:', e);
-    res.status(500).json({ error: 'Failed to fetch lyrics' });
+    res.status(500).json({ error: 'Lyrics: currently on vacation.' });
   }
 });
+
 // Helper to find the active Spotify device
 async function getActiveDeviceId(access_token) {
   try {
